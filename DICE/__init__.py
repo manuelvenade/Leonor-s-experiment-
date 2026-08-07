@@ -184,6 +184,15 @@ def prepare_video(df):
     return df
 
 
+def prepare_ad_flag(df):
+    """Ensure is_ad is a clean boolean flag, defaulting missing values to False."""
+    if 'is_ad' not in df.columns:
+        df['is_ad'] = False
+    else:
+        df['is_ad'] = df['is_ad'].fillna(0).astype(int).astype(bool)
+    return df
+
+
 def prepare_user_profiles(df):
     """Prepare profile pics, icons, colors, descriptions, followers, and tooltip HTML."""
     df['profile_pic_available'] = df['user_image'].apply(is_url)
@@ -219,6 +228,7 @@ def preprocessing(df, config):
     df = prepare_numeric_fields(df)
     df = prepare_media(df)
     df = prepare_video(df)
+    df = prepare_ad_flag(df)
     df = prepare_user_profiles(df)
 
     # Check if 'condition_col' is set and not empty, and if it's an existing column in df
