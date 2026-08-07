@@ -1069,8 +1069,9 @@ Then, still in `DICE/C_Feed.html`, add the overlay markup right after the loadin
 <!-- Friction gate overlay -->
 <div id="friction-gate" class="d-none">
     <div class="friction-gate-content">
-        <div id="friction-countdown">3</div>
-        <button id="frictionContinueBtn" type="button" disabled>Continue</button>
+        <!-- Starting value kept in sync with FRICTION_COUNTDOWN_SECONDS in video_feed.js -->
+        <div id="friction-countdown" aria-live="polite">3</div>
+        <button id="frictionContinueBtn" type="button" disabled aria-label="Continue (available when countdown reaches zero)">Continue</button>
     </div>
 </div>
 
@@ -1078,7 +1079,7 @@ Then, still in `DICE/C_Feed.html`, add the overlay markup right after the loadin
 <div id="mainContent" style="display:none;">
 ```
 
-The countdown starts the button disabled by default in the markup; `video_feed.js` (Task 14) drives the actual countdown and re-enables it once it reaches zero.
+The countdown starts the button disabled by default in the markup; `video_feed.js` (Task 14) drives the actual countdown and re-enables it once it reaches zero. `aria-live="polite"` on the countdown means screen readers announce each tick; the button's `aria-label` explains why it's disabled without relying on visual context.
 
 - [ ] **Step 3: Add friction gate styles**
 
