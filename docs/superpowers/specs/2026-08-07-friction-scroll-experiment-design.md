@@ -163,9 +163,13 @@ friction_data = models.LongStringField(
     blank=True)
 ```
 
-Content: JSON list of `{doc_id, delay_seconds}`, one entry per gated
-transition, keyed by the *target* video's `doc_id` (i.e., "how long the
-participant sat on the gate before this video appeared"). Empty list for
+Content: JSON list of `{doc_id, delay_seconds}`, keyed by the *target*
+video's `doc_id` (i.e., "how long the participant sat on the gate before
+this video appeared"). At most one entry per `doc_id` — if a participant
+is gated into the same video more than once (e.g. swiping back and then
+forward again), only the *first* encounter's delay is kept, since that's
+the more representative measure of the manipulation's cost and shouldn't
+be silently overwritten by a later re-encounter. Empty list for
 normal-condition participants.
 
 `promoted_post_clicks` (existing field, currently written but never
