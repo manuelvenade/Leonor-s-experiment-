@@ -5,7 +5,6 @@ import re
 import random
 import itertools
 import urllib.parse
-import json
 
 from feed_logic import assign_cycle_pairs, parse_json_field, build_export_row
 
