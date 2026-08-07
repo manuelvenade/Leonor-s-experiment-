@@ -1,167 +1,127 @@
-# DICE TikTok
+# Leonor's Experiment — Friction Scroll Study
 
-A TikTok-style social media feed simulator for online behavioral experiments, built with [oTree](https://otree.readthedocs.io/en/latest/).
+A TikTok-style feed experiment testing how a "friction scroll" navigation mechanic (a forced pause with a countdown between videos) affects engagement, built with [oTree](https://otree.readthedocs.io/en/latest/) on top of the [DICE](https://github.com/Howquez/DICE) platform.
 
-## Background
+## Study design
 
-[DICE](https://github.com/Howquez/DICE) (Digital In-Context Experiments) is a platform for simulating social media feeds in controlled experiments. It comes with a graphical interface at [dice-app.org](https://dice-app.org) that lets you build and deploy feed experiments without writing code. [DICE Lite](https://github.com/Howquez/DICE-lite) is a stripped-down version for researchers who prefer working directly with code — same core logic, no GUI layer.
+3×2 between-subjects design:
 
-DICE TikTok is a further iteration. It replaces the microblogging-style feed of DICE Lite with a short-form video interface that mimics TikTok: full-screen vertical videos, swipe-to-navigate, like and comment interactions, and a bottom navigation bar. The behavioral measurement logic is adapted accordingly (including video play time).
+- **Video topic**: SPORT, FOOD, or TRAVEL
+- **Navigation condition**: normal free scroll, or friction scroll (a black screen with a 3-second countdown appears after every video; the participant must wait for it and click Continue before the next video appears)
 
-## What researchers can use it for
+Every participant sees 6 videos in a fixed order: 4 regular videos, then a sponsored ad post, then 1 more regular video. Engagement stats (likes/comments/shares) are matched by position across the three topics, so the topic itself can't confound the navigation-condition comparison.
 
-DICE TikTok is designed for experiments where the stimulus is short-form video content. Some examples:
+Participants are assigned to one of the 6 (topic × navigation) cells automatically, balanced so every 6 participants covers all 6 cells exactly once.
 
-- **Misinformation research** — expose participants to a feed containing true and false video claims and measure engagement (likes, watch time, comments) by content type
-- **Advertising effects** — study how sponsored video content affects attitudes or behavior compared to organic content
-- **Algorithmic curation** — compare engagement across different feed orderings or video selection conditions
-- **Platform literacy** — examine how people interact with TikTok-style interfaces across age groups or demographics
-
-Like DICE and DICE Lite, this version integrates naturally with survey platforms (Qualtrics, SoSci Survey, etc.) via a redirect at the end of the feed. Participant IDs are passed as URL parameters so you can link feed behavior data to survey responses.
-
-## What it measures
-
-For each participant × video combination, the export contains:
-
-| Field | Description |
-|-------|-------------|
-| `watch_time_seconds` | Seconds the video was actually playing (paused time excluded) |
-| `liked` | Whether the participant liked the video |
-| `has_comment` | Whether the participant left a comment |
-| `comment` | The comment text |
-| `sequence_position` | Position of this video in the feed |
-
-Device information (device type, screen resolution, touch capability) is also recorded at the session level.
-
-## Getting started
-
-### Quickest path: download the `.otreezip`
-
-The releases page includes a ready-to-use `.otreezip` file. If you just want to run the experiment as-is or make small tweaks to the CSV and templates, this is the easiest route — no git required.
-
-To run it locally, download the `.otreezip` file, then:
+## Running it
 
 ```bash
-otree unzip DICE-tiktok.otreezip
-cd DICE-tiktok
-otree devserver
-```
-
-To deploy it directly to oTreeHub, skip the unzip step and upload the `.otreezip` file as described below.
-
-### Running it locally from source
-
-If you want to modify the code, clone the repository instead:
-
-```bash
-git clone https://github.com/Howquez/DICE-tiktok.git
-cd DICE-tiktok
+git clone https://github.com/manuelvenade/Leonor-s-experiment-.git
+cd Leonor-s-experiment-
 pip install -r requirements.txt
 otree devserver
 ```
 
-Then open `http://localhost:8000` in your browser.
+Open `http://localhost:8000/demo/FrictionScrollStudy` — this creates a demo session with 6 participants and gives you a play link for each one.
 
-### Deploying to oTreeHub
+## Deploying online (oTreeHub)
 
-[oTreeHub](https://www.otreehub.com) is the simplest way to host an oTree experiment online — no server setup required. To deploy:
+[oTreeHub](https://www.otreehub.com) hosts oTree studies without you needing to manage a server.
 
-1. If you're working from source, run `otree zip` in the project directory to create a `.otreezip` file. If you downloaded the release, use that file directly.
-2. Log in to [otreehub.com](https://www.otreehub.com), create a new project, and upload the `.otreezip` file.
-3. Click **Deploy**. oTreeHub provisions a server and gives you a public URL to share with participants.
+1. Run `otree zip` in the project folder — this creates a `.otreezip` file.
+2. Log in to [otreehub.com](https://www.otreehub.com), create a new project, and upload that `.otreezip`.
+3. Click **Deploy**. You get a public URL to send to participants.
 
-When you update the project, repeat steps 1–2 and redeploy. Session data can be downloaded from the oTreeHub dashboard as CSV files.
+Whenever you change a video, the CSV, or any code, repeat `otree zip` and re-upload to redeploy. Session data can be downloaded from the oTreeHub dashboard.
 
-## Adding your own videos
+## How to add or replace a video
 
-The feed is driven by a CSV file. The `video` column tells the app which video to show for each row — it accepts either a local filename or a full URL.
+All feed content lives in one file: `DICE/static/data/friction_scroll_videos.csv`. It has 18 rows — one per (topic, position) combination — and it's semicolon-separated (open it in Excel/Sheets and set the delimiter to `;`, or edit it directly as text).
 
-### Option 1: Local files
+**To replace an existing video** (e.g. swap out one of the placeholder SPORT or TRAVEL clips):
 
-Place `.mp4` files in `DICE/static/mp4/` and reference them by filename in the CSV:
+1. **Add your video file** to `DICE/static/mp4/`. Give it a clear name, e.g. `sport1.mp4`. Keep clips short (under 30 seconds) and small (under ~15 MB) — large files slow down deployment.
+2. **Find its row** in the CSV. Each row has a `condition` column (SPORT/FOOD/TRAVEL) and a `sequence` column (1–6, its position in that topic's feed). For example, the SPORT topic's first video is the row where `condition=SPORT` and `sequence=1`.
+3. **Update only these three columns** in that row:
+   - `video` → your new filename (e.g. `sport1.mp4`)
+   - `text` → the caption to show under the username
+   - `username` / `handle` → whatever poster identity you want for that clip
+4. **Leave every other column in that row untouched** — especially `likes`, `reposts`, `replies`, `doc_id`, `condition`, `sequence`, and `is_ad`. Those numbers are deliberately identical across SPORT/FOOD/TRAVEL at each position; changing them breaks the experimental control the study depends on.
 
-```
-video
-1.mp4
-2.mp4
-```
+**To check you haven't broken anything**, run:
 
-This works well for development and for small studies. For oTreeHub deployment, keep in mind that large video files will increase the size of your `.otreezip` and may slow things down. A few short clips (under 30 seconds, under 10 MB each) are fine.
-
-### Option 2: A video hosting service
-
-Upload your videos to a service that provides a direct `.mp4` URL — [Cloudinary](https://cloudinary.com), [Bunny.net](https://bunny.net), or AWS S3 all work. Paste the URL directly into the CSV:
-
-```
-video
-https://your-cdn.com/videos/clip1.mp4
-https://your-cdn.com/videos/clip2.mp4
+```bash
+python -m pytest tests/test_csv_validation.py -v
 ```
 
-This is the recommended approach for larger studies. Videos load from the CDN rather than your oTreeHub server, which keeps the app fast and the `.otreezip` small. The service just needs to allow cross-origin requests (CORS) — most CDNs do this by default.
+This checks the row count, that every topic has all 6 positions, that the ad is where it should be, and that the engagement numbers still match across topics. If it passes, you're good.
 
-### Option 3: Downloading videos for research use
+**Currently in the CSV:**
+- FOOD topic (positions 1–4, 6) and the ad (position 5, identical across all three topics) use real footage already in `DICE/static/mp4/`.
+- SPORT and TRAVEL still use short placeholder clips (`1.mp4`–`9.mp4`) and need to be replaced with real footage before running the actual study.
 
-If you want to use existing TikTok or YouTube Shorts videos as stimuli, you can download them with [`yt-dlp`](https://github.com/yt-dlp/yt-dlp), then host them using Option 1 or 2. Bear in mind your institution's policies on using third-party content in research.
+**Using a video hosting service instead of local files:** you can also just paste a direct `.mp4` URL into the `video` column (e.g. from Cloudinary, Bunny.net, or S3) instead of a local filename — this keeps the repo small and is recommended if you have many/large videos. The service just needs to allow cross-origin requests (most CDNs do this by default). Do not use YouTube or TikTok links directly — those platforms block embedding.
 
-Once downloaded, host the files somewhere accessible (your university server, S3, a CDN) and reference them by URL in the CSV. Do not embed YouTube or TikTok links directly — those platforms do not allow it.
+## How to change the survey redirect link
 
-## Configuring the feed
+After finishing the feed, participants are redirected to an external survey. To point this at your own survey:
 
-The feed is controlled by a CSV file pointed to in `settings.py`:
+1. Open `settings.py`.
+2. Find this line inside `SESSION_CONFIG_DEFAULTS`:
+   ```python
+   survey_link = 'https://unisg.qualtrics.com/jfe/form/SV_0DnMoLpM0VxjhrM',
+   ```
+3. Replace the URL with your own survey's link (Qualtrics, SoSci Survey, Google Forms, etc.):
+   ```python
+   survey_link = 'https://your-survey-platform.com/your-survey-id',
+   ```
+4. If your survey needs to know which participant this is (to link feed data to survey responses), check `url_param` right below it:
+   ```python
+   url_param = 'PROLIFIC_PID',
+   ```
+   This is the name of the URL query parameter the participant's ID gets attached as, e.g. `?PROLIFIC_PID=abc123`. Set this to match whatever your survey platform calls its embedded-data field (in Qualtrics this is usually the "Embedded Data" field name you set up to receive it).
 
+**If you don't have a survey yet**, leave `survey_link` as an empty string — participants will see a simple built-in "Thank you" debrief page instead:
 ```python
-data_path = "DICE/static/data/sample_videos.csv"
+survey_link = '',
 ```
 
-You can change this to a local path or a public URL (GitHub raw, Google Drive). The file uses `;` as delimiter by default.
+## What gets recorded
 
-### Required columns
+For each participant × video, the export (`Data` tab in oTree's admin, or `/export` locally) contains:
 
-| Column | Description |
-|--------|-------------|
-| `doc_id` | Unique integer identifier for each video |
-| `datetime` | Post timestamp (format: `DD.MM.YY HH:MM`) |
-| `text` | Caption text shown below the username |
-| `video` | Filename or URL (see above) |
-| `likes` | Starting like count |
-| `reposts` | Starting share count |
-| `replies` | Starting comment count |
-| `username` | Display name |
-| `handle` | @handle |
-| `user_description` | Short profile bio |
-| `user_image` | Profile picture URL (leave blank for a generated icon) |
-| `user_followers` | Follower count |
-| `condition` | Experimental condition label (e.g. `A`, `B`) — used for between-subjects designs |
-| `sequence` | Fixed position in the feed (leave blank to randomize) |
+| Field | Description |
+|-------|-------------|
+| `condition` | Video topic: SPORT, FOOD, or TRAVEL |
+| `nav_condition` | Navigation condition: normal or friction |
+| `sequence_position` | Position of this video in the feed (1–6) |
+| `watch_time_seconds` | Seconds the video was actually playing |
+| `video_length_seconds` | The clip's actual length |
+| `watch_percentage` | `watch_time_seconds` as a % of the clip's length |
+| `liked` | Whether the participant liked the video |
+| `has_comment` / `comment` | Whether they commented, and the text |
+| `friction_delay_seconds` | Total time on the black gate before this video (friction condition only) |
+| `voluntary_hesitation_seconds` | Of that delay, how much was *beyond* the mandatory 3-second countdown |
+| `ad_clicked` | Whether they clicked the ad's "Learn more" button |
+| `completed_feed` | Whether they watched through to the end, or left early |
+| `last_position_viewed` | The last video position they reached |
+| `total_watch_time_seconds`, `session_duration_seconds`, `completion_rate` | Session-level totals, repeated on every row for that participant |
 
-The sample file at `DICE/static/data/sample_videos.csv` shows the expected format.
+Device info (device type, screen resolution, touch capability) is also recorded per participant.
 
-### Between-subjects conditions
-
-If your CSV contains multiple values in the `condition` column, participants are automatically assigned to conditions in rotation. Only the videos matching a participant's condition are shown. Set `condition_col` in `settings.py` if your column has a different name.
-
-## Customizing the experiment
-
-Most things you'd want to change are in `settings.py` or in the HTML templates:
+## Customizing further
 
 - **Researcher info and consent text** — `DICE/T_Consent.html` and `settings.py` (`full_name`, `eMail`, `study_name`)
-- **Briefing instructions** — `DICE/B_Briefing.html`
-- **Survey redirect** — set `survey_link` and `url_param` in `settings.py`
-- **Hidden form fields are managed manually** — if you add a new Player field in `__init__.py`, you also need to add the corresponding `<input type="hidden">` in `C_Feed.html` and include the field in `get_form_fields()`
+- **Briefing instructions** (shown before the feed starts) — `DICE/B_Briefing.html`
+- **Friction countdown length** — `FRICTION_COUNTDOWN_SECONDS` near the top of `DICE/static/js/video_feed.js` (currently 3 seconds)
+- **Ad content** — the three rows in the CSV where `is_ad=1` (one per topic, identical to each other by design)
 
 ## Citation
 
-If you use DICE TikTok in a published study, please cite the original DICE paper:
+This project builds on DICE. If you use it in a published study, please cite:
 
-> Roggenkamp, H., Boegershausen, J., & Hildebrand, C. (2026). DICE: Advancing Social Media Research Through Digital In-Context Experiments. Journal of Marketing. https://doi.org/10.1177/00222429251371702 
-
-or check `Cite this repository` to the right.
+> Roggenkamp, H., Boegershausen, J., & Hildebrand, C. (2026). DICE: Advancing Social Media Research Through Digital In-Context Experiments. Journal of Marketing. https://doi.org/10.1177/00222429251371702
 
 ## Tested on
 
-Chrome 146 / macOS 26.3.1 (arm64). Designed for mobile browsers (iOS Safari, Android Chrome) as the primary target platform.
-
----
-
-Questions, bug reports, and pull requests are welcome via [GitHub Issues](https://github.com/Howquez/DICE-tiktok/issues).
+Chrome / macOS and Windows. Designed for mobile browsers (iOS Safari, Android Chrome) as the primary target platform.
