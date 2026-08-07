@@ -7,6 +7,15 @@ let isNavigating = false;
 let touchStartY = 0;
 let navLockTimer = null;
 
+// Friction-scroll state
+const navCondition = window.NAV_CONDITION || 'normal';
+const FRICTION_COUNTDOWN_SECONDS = 3;
+let pendingNavigation = null; // { index, items }
+let gateShownAt = null;
+let countdownTimer = null;
+const frictionLog = [];
+const promotedClicks = [];
+
 // Play-time tracking
 const playData = {}; // { docId: { totalSeconds, playStartTime } }
 
@@ -221,6 +230,37 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Friction gate: Continue button
+    const frictionContinueBtn = document.getElementById('frictionContinueBtn');
+    if (frictionContinueBtn) {
+        frictionContinueBtn.addEventListener('click', function () {
+            if (!pendingNavigation) return;
+
+            const targetItem = pendingNavigation.items[pendingNavigation.index];
+            const docId = targetItem && targetItem.dataset.docId ? parseInt(targetItem.dataset.docId) : null;
+            if (docId !== null) {
+                frictionLog.push(computeFrictionEntry(docId, gateShownAt, Date.now()));
+            }
+
+            document.getElementById('friction-gate').classList.add('d-none');
+            performNavigation(pendingNavigation.index, pendingNavigation.items);
+            pendingNavigation = null;
+            gateShownAt = null;
+        });
+    }
+
+    // Ad CTA click tracking
+    document.querySelectorAll('.ad-cta-button').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const docId = parseInt(btn.dataset.docId);
+            const alreadyLogged = promotedClicks.some(function (entry) { return entry.doc_id === docId; });
+            if (!alreadyLogged) {
+                promotedClicks.push({ doc_id: docId, clicked: true });
+            }
+        });
+    });
+
     // Comment input: submit on Enter (without Shift)
     const commentInput = document.getElementById('comment-input');
     if (commentInput) {
@@ -257,12 +297,45 @@ function navigateTo(index, items) {
     if (isNavigating) return;
     if (index < 0 || index >= items.length) return;
 
+    if (shouldGateNavigation(navCondition)) {
+        pendingNavigation = { index: index, items: items };
+        gateShownAt = Date.now();
+        document.getElementById('friction-gate').classList.remove('d-none');
+        startFrictionCountdown();
+        return;
+    }
+
+    performNavigation(index, items);
+}
+
+function performNavigation(index, items) {
     isNavigating = true;
     currentIndex = index;
     items[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     clearTimeout(navLockTimer);
     navLockTimer = setTimeout(function () { isNavigating = false; }, 500);
+}
+
+function startFrictionCountdown() {
+    const countdownEl = document.getElementById('friction-countdown');
+    const continueBtn = document.getElementById('frictionContinueBtn');
+    continueBtn.disabled = true;
+
+    clearInterval(countdownTimer);
+
+    function tick() {
+        const remaining = getCountdownRemaining(gateShownAt, Date.now(), FRICTION_COUNTDOWN_SECONDS);
+        countdownEl.textContent = remaining;
+        if (remaining <= 0) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            continueBtn.disabled = false;
+        }
+    }
+
+    tick();
+    countdownTimer = setInterval(tick, 100);
 }
 
 function openComments(docId) {
@@ -384,7 +457,8 @@ function collectAllData() {
 
     document.getElementById('likes_data').value = JSON.stringify(likes);
     document.getElementById('replies_data').value = JSON.stringify(replies);
-    document.getElementById('promoted_post_clicks').value = JSON.stringify([]);
+    document.getElementById('promoted_post_clicks').value = JSON.stringify(promotedClicks);
+    document.getElementById('friction_data').value = JSON.stringify(frictionLog);
     document.getElementById('viewport_data').value = serializeViewportData();
 
     console.log('Data collected. Likes:', likes.length, 'Replies:', replies.length);
