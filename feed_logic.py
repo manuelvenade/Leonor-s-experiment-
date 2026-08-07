@@ -21,3 +21,36 @@ def assign_cycle_pairs(topics, nav_conditions, rng=None):
     pairs = list(itertools.product(topics, nav_conditions))
     rng.shuffle(pairs)
     return pairs
+
+
+def parse_json_field(raw_json):
+    """Parse a JSON list field into a dict keyed by doc_id.
+
+    Returns {} on missing, empty, or invalid input.
+    """
+    try:
+        return {entry['doc_id']: entry for entry in json.loads(raw_json or '[]')}
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return {}
+
+
+def build_export_row(session_code, participant_code, participant_label, id_in_group,
+                      feed_condition, nav_condition, doc_id, position,
+                      viewport, likes, replies, friction, promoted):
+    """Assemble one custom_export row from parsed per-doc_id lookup dicts."""
+    return [
+        session_code,
+        participant_code,
+        participant_label,
+        id_in_group,
+        feed_condition,
+        nav_condition,
+        doc_id,
+        position,
+        viewport.get(doc_id, {}).get('duration', ''),
+        likes.get(doc_id, {}).get('liked', ''),
+        replies.get(doc_id, {}).get('hasReply', ''),
+        replies.get(doc_id, {}).get('reply', ''),
+        friction.get(doc_id, {}).get('delay_seconds', ''),
+        promoted.get(doc_id, {}).get('clicked', ''),
+    ]
