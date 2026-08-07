@@ -6,6 +6,13 @@ SESSION_CONFIGS = [
         app_sequence=['DICE'],
         num_demo_participants=3,
     ),
+    dict(
+        name='FrictionScrollStudy',
+        app_sequence=['DICE'],
+        num_demo_participants=6,
+        data_path='DICE/static/data/friction_scroll_videos.csv',
+        nav_conditions=['normal', 'friction'],
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs
