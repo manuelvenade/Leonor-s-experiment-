@@ -1416,16 +1416,17 @@ This is the point where DOM/video-dependent behavior — not covered by the auto
 Run: `python -m pytest tests/ -v && node tests/friction.test.js`
 Expected: all pytest tests pass, both friction.test.js PASS lines print.
 
-- [ ] **Step 2: Start the oTree dev server**
+- [ ] **Step 2: Reset the dev database, then start the oTree dev server**
 
-Run: `otree devserver`
-Expected: server starts on `http://localhost:8000` with no startup errors.
+Run: `otree resetdb` (answer yes to confirm), then `otree devserver`
+Expected: `resetdb` completes without error; the dev server starts on `http://localhost:8000` with no startup errors. The reset is necessary because `nav_condition` and `friction_data` are new `Player` model columns (added in Task 7) — oTree/SQLAlchemy doesn't auto-migrate an existing dev SQLite database, so a stale `db.sqlite3` from before this branch's work would be missing these columns and could error when players are created.
 
 - [ ] **Step 3: Verify the normal-scroll condition**
 
 In a browser, go to `http://localhost:8000`, start a demo session for **FrictionScrollStudy**, and open a play link. Tap Start.
 - Swipe/scroll through videos — confirm navigation is instant, no black screen appears, exactly as the existing `Feed` demo behaves today.
 - Confirm the ad post (5th item) shows a "Sponsored" tag and a "Learn more" button, and clicking it doesn't navigate away or break the feed.
+- Specifically check text legibility on the ad post: the added CTA button makes the `.video-info` stack (tag + username + description + audio row + button) taller than a regular post's. Confirm the username/tag text doesn't spill above `.gradient-bottom`'s dark backdrop against a bright part of the ad video — if it does, widen `.gradient-bottom`'s height in `tiktok.css`.
 - Reach the end card and submit.
 
 - [ ] **Step 4: Verify the friction-scroll condition**
