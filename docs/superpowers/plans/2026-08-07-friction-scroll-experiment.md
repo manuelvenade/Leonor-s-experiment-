@@ -931,6 +931,13 @@ assert.strictEqual(getCountdownRemaining(1000, 4000, 3), 0);
 assert.strictEqual(getCountdownRemaining(1000, 9000, 3), 0);
 console.log('PASS: getCountdownRemaining counts down and floors at zero');
 
+// Clock skew: now before gateShownAt (e.g. a backward-jumping system clock)
+// must not produce a negative delay or an inflated countdown.
+const skewedEntry = computeFrictionEntry(1, 5000, 1000);
+assert.strictEqual(skewedEntry.delay_seconds, 0);
+assert.strictEqual(getCountdownRemaining(5000, 1000, 3), 3);
+console.log('PASS: negative elapsed time (clock skew) clamps to zero');
+
 console.log('All friction.test.js tests passed.');
 ```
 
@@ -952,11 +959,12 @@ function shouldGateNavigation(navCondition) {
 }
 
 function computeFrictionEntry(docId, gateShownAt, now) {
-    return { doc_id: docId, delay_seconds: Number(((now - gateShownAt) / 1000).toFixed(3)) };
+    const elapsed = Math.max(0, (now - gateShownAt) / 1000);
+    return { doc_id: docId, delay_seconds: Number(elapsed.toFixed(3)) };
 }
 
 function getCountdownRemaining(gateShownAt, now, countdownSeconds) {
-    const elapsed = (now - gateShownAt) / 1000;
+    const elapsed = Math.max(0, (now - gateShownAt) / 1000);
     return Math.max(0, Math.ceil(countdownSeconds - elapsed));
 }
 
@@ -964,6 +972,8 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = { shouldGateNavigation, computeFrictionEntry, getCountdownRemaining };
 }
 ```
+
+(`Math.max(0, ...)` on `elapsed` guards against backward-jumping wall-clock time — `Date.now()` isn't guaranteed monotonic, e.g. NTP sync or a manual clock change mid-session — so a `gateShownAt > now` reading can't produce a negative `delay_seconds` in the exported research data or an inflated countdown.)
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -973,6 +983,7 @@ Expected:
 PASS: shouldGateNavigation only gates the friction condition
 PASS: computeFrictionEntry computes delay in seconds, keyed by doc_id
 PASS: getCountdownRemaining counts down and floors at zero
+PASS: negative elapsed time (clock skew) clamps to zero
 All friction.test.js tests passed.
 ```
 
