@@ -54,3 +54,23 @@ def build_export_row(session_code, participant_code, participant_label, id_in_gr
         friction.get(doc_id, {}).get('delay_seconds', ''),
         promoted.get(doc_id, {}).get('clicked', ''),
     ]
+
+
+def validate_matched_stats(df, group_col='condition', position_col='sequence',
+                            stat_cols=('likes', 'reposts', 'replies')):
+    """Check that every position has identical stat values across all groups.
+
+    Returns a list of human-readable violation messages (empty if valid).
+    Used to guard the "same initial condition per position across topics"
+    invariant that the friction-scroll design depends on.
+    """
+    violations = []
+    for position, position_df in df.groupby(position_col):
+        for stat_col in stat_cols:
+            unique_values = position_df[stat_col].unique()
+            if len(unique_values) > 1:
+                mapping = dict(zip(position_df[group_col], position_df[stat_col]))
+                violations.append(
+                    f"{position_col}={position}: '{stat_col}' differs across groups ({mapping})"
+                )
+    return violations
