@@ -150,6 +150,34 @@ body { margin: 0; padding: 0; background: #000; overflow: hidden; }
     max-width: 180px;
 }
 
+/* ---- Sponsored ad post ---- */
+.sponsored-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+.ad-cta-button {
+    display: block;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 16px;
+    margin-top: 10px;
+    cursor: pointer;
+    width: fit-content;
+}
+.ad-cta-button:active { opacity: 0.85; }
+
 /* ---- Mute button ---- */
 #mute-btn {
     position: fixed;
