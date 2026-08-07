@@ -1311,7 +1311,7 @@ to:
 - [ ] **Step 5: Re-run the friction.js node test to confirm the shared functions still resolve correctly**
 
 Run: `node tests/friction.test.js`
-Expected: same 3 PASS lines as Task 12 (video_feed.js calling `shouldGateNavigation`/`computeFrictionEntry`/`getCountdownRemaining` as globals doesn't change friction.js itself).
+Expected: same 4 PASS lines as Task 12 (video_feed.js calling `shouldGateNavigation`/`computeFrictionEntry`/`getCountdownRemaining` as globals doesn't change friction.js itself).
 
 - [ ] **Step 6: Commit**
 
