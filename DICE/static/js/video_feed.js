@@ -20,6 +20,12 @@ const promotedClicks = [];
 let sessionStartedAt = null;
 const videoDurations = {}; // { docId: seconds } — each clip's own length, from <video>.duration
 
+function captureVideoDuration(docId, video) {
+    if (isFinite(video.duration)) {
+        videoDurations[docId] = video.duration;
+    }
+}
+
 // Play-time tracking
 const playData = {}; // { docId: { totalSeconds, playStartTime } }
 
@@ -116,11 +122,10 @@ document.getElementById('startBtn').addEventListener('click', function () {
             video.addEventListener('play', function () { onVideoPlay(docId); });
             video.addEventListener('pause', function () { onVideoPause(docId); });
             video.addEventListener('ended', function () { onVideoPause(docId); });
-            video.addEventListener('loadedmetadata', function () {
-                if (isFinite(video.duration)) {
-                    videoDurations[docId] = video.duration;
-                }
-            });
+            video.addEventListener('loadedmetadata', function () { captureVideoDuration(docId, video); });
+            // preload="auto" can finish loading metadata before this listener
+            // attaches, so the event may already have fired — check synchronously too.
+            captureVideoDuration(docId, video);
         }
     });
 
