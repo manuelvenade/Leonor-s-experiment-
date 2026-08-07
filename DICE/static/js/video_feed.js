@@ -298,6 +298,7 @@ function navigateTo(index, items) {
     if (index < 0 || index >= items.length) return;
 
     if (shouldGateNavigation(navCondition)) {
+        if (pendingNavigation) return; // gate already showing — ignore repeat triggers (e.g. held arrow keys)
         pendingNavigation = { index: index, items: items };
         gateShownAt = Date.now();
         document.getElementById('friction-gate').classList.remove('d-none');
