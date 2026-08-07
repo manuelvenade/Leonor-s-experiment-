@@ -365,7 +365,7 @@ git commit -m "feat: add matched-stats validator for feed CSV content"
 - Create: `DICE/static/data/friction_scroll_videos.csv`
 - Test: `tests/test_csv_validation.py`
 
-This CSV uses placeholder video files (reusing the existing demo clips already in `DICE/static/mp4/`) and placeholder captions — content curation (real SPORT/FOOD/TRAVEL footage and copy) is a separate manual task per the spec's "Out of scope" section. The schema and matched-stats invariant are what this task locks in.
+The FOOD topic and the ad use real footage, already copied into `DICE/static/mp4/` as `food1.mp4`, `food2.mp4`, `food3.mp4`, `food4.mp4`, `food6.mp4` (positions 1–4 and 6) and `ad.mp4` (position 5, shared identically across all three topics per the spec). SPORT and TRAVEL still use placeholder video files (reusing the existing demo clips in `DICE/static/mp4/`) and placeholder captions — sourcing that footage is a separate manual task per the spec's "Out of scope" section. Captions for FOOD/ad rows are still placeholder copy (the real videos' actual content wasn't reviewed) — swap them for real caption copy once you've watched the footage. The schema and matched-stats invariant are what this task locks in.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -434,19 +434,19 @@ doc_id;datetime;text;video;likes;reposts;replies;username;handle;user_descriptio
 1;02.06.25 09:00;Preseason training is no joke 💪 #fitness #training;2.mp4;28400;610;450;IronYard;ironyard;Strength and conditioning coach.;;88000;SPORT;2;0
 2;03.06.25 09:00;Half-time routine that keeps me sharp ⚽ #soccer #sports;3.mp4;9800;140;95;PitchPerfect;pitchperfectofficial;Weekend league, full-time passion.;;21000;SPORT;3;0
 3;04.06.25 09:00;This comeback win still gives me chills 🔥 #sports #comeback;4.mp4;42100;980;670;GameDayGlory;gamedayglory;Living for the clutch moments.;;134000;SPORT;4;0
-4;05.06.25 09:00;Train smarter with gear built for real athletes.;5.mp4;3200;45;28;ProGearCo;progearco;Official gear partner.;;9800;SPORT;5;1
+4;05.06.25 09:00;The one thing everyone's been talking about lately. Shop now.;ad.mp4;3200;45;28;ProGearCo;progearco;Official partner.;;9800;SPORT;5;1
 5;06.06.25 09:00;Sunday morning run, best therapy there is 🏃 #running #sports;6.mp4;18700;390;260;TrailAndError;trailanderror;Chasing personal bests.;;61000;SPORT;6;0
-6;01.06.25 09:00;Nailed this recipe on the first try 🍝 #cooking #food;8.mp4;15000;320;210;KitchenKingz;kitchenkingz;Cooking every single day.;;52000;FOOD;1;0
-7;02.06.25 09:00;Meal-prep Sunday is no joke 🥗 #mealprep #food;9.mp4;28400;610;450;FreshYard;freshyard;Home cook, full pantry.;;88000;FOOD;2;0
-8;03.06.25 09:00;This plating trick keeps my dishes sharp 🍽️ #foodie #food;1.mp4;9800;140;95;PlatePerfect;plateperfectofficial;Weeknight dinners, full-time passion.;;21000;FOOD;3;0
-9;04.06.25 09:00;This dessert save still gives me chills 🍰 #baking #food;2.mp4;42100;980;670;BakeDayGlory;bakedayglory;Living for the sweet moments.;;134000;FOOD;4;0
-10;05.06.25 09:00;Train smarter with gear built for real athletes.;5.mp4;3200;45;28;ProGearCo;progearco;Official gear partner.;;9800;FOOD;5;1
-11;06.06.25 09:00;Sunday morning bake, best therapy there is 🍞 #baking #food;3.mp4;18700;390;260;CrumbAndError;crumbanderror;Chasing the perfect crust.;;61000;FOOD;6;0
+6;01.06.25 09:00;Nailed this recipe on the first try 🍝 #cooking #food;food1.mp4;15000;320;210;KitchenKingz;kitchenkingz;Cooking every single day.;;52000;FOOD;1;0
+7;02.06.25 09:00;Meal-prep Sunday is no joke 🥗 #mealprep #food;food2.mp4;28400;610;450;FreshYard;freshyard;Home cook, full pantry.;;88000;FOOD;2;0
+8;03.06.25 09:00;This plating trick keeps my dishes sharp 🍽️ #foodie #food;food3.mp4;9800;140;95;PlatePerfect;plateperfectofficial;Weeknight dinners, full-time passion.;;21000;FOOD;3;0
+9;04.06.25 09:00;This dessert save still gives me chills 🍰 #baking #food;food4.mp4;42100;980;670;BakeDayGlory;bakedayglory;Living for the sweet moments.;;134000;FOOD;4;0
+10;05.06.25 09:00;The one thing everyone's been talking about lately. Shop now.;ad.mp4;3200;45;28;ProGearCo;progearco;Official partner.;;9800;FOOD;5;1
+11;06.06.25 09:00;Sunday morning bake, best therapy there is 🍞 #baking #food;food6.mp4;18700;390;260;CrumbAndError;crumbanderror;Chasing the perfect crust.;;61000;FOOD;6;0
 12;01.06.25 09:00;Nailed this hidden gem on the first try 🗺️ #travel #wanderlust;4.mp4;15000;320;210;RoamKingz;roamkingz;Exploring every single day.;;52000;TRAVEL;1;0
 13;02.06.25 09:00;Backpacking prep is no joke 🎒 #travel #backpacking;6.mp4;28400;610;450;TrailYard;trailyard;Trail guide and gear nerd.;;88000;TRAVEL;2;0
 14;03.06.25 09:00;This packing trick keeps my trips sharp ✈️ #travel #packing;8.mp4;9800;140;95;PackPerfect;packperfectofficial;Carry-on only, full-time passion.;;21000;TRAVEL;3;0
 15;04.06.25 09:00;This flight delay save still gives me chills 🛫 #travel #airport;9.mp4;42100;980;670;GateDayGlory;gatedayglory;Living for the standby upgrade.;;134000;TRAVEL;4;0
-16;05.06.25 09:00;Train smarter with gear built for real athletes.;5.mp4;3200;45;28;ProGearCo;progearco;Official gear partner.;;9800;TRAVEL;5;1
+16;05.06.25 09:00;The one thing everyone's been talking about lately. Shop now.;ad.mp4;3200;45;28;ProGearCo;progearco;Official partner.;;9800;TRAVEL;5;1
 17;06.06.25 09:00;Sunday morning hike, best therapy there is ⛰️ #hiking #travel;1.mp4;18700;390;260;PeakAndError;peakanderror;Chasing the summit.;;61000;TRAVEL;6;0
 ```
 
@@ -457,9 +457,11 @@ Expected: 5 passed.
 
 - [ ] **Step 5: Commit**
 
+The real FOOD/ad video files (`food1.mp4`, `food2.mp4`, `food3.mp4`, `food4.mp4`, `food6.mp4`, `ad.mp4`) were already copied into `DICE/static/mp4/` ahead of this task — include them in this commit too.
+
 ```bash
-git add DICE/static/data/friction_scroll_videos.csv tests/test_csv_validation.py
-git commit -m "feat: add friction-scroll feed CSV template with matched stats"
+git add DICE/static/data/friction_scroll_videos.csv tests/test_csv_validation.py DICE/static/mp4/food1.mp4 DICE/static/mp4/food2.mp4 DICE/static/mp4/food3.mp4 DICE/static/mp4/food4.mp4 DICE/static/mp4/food6.mp4 DICE/static/mp4/ad.mp4
+git commit -m "feat: add friction-scroll feed CSV template with matched stats and real FOOD/ad footage"
 ```
 
 ---
