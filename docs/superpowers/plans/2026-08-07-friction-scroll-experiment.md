@@ -873,10 +873,12 @@ def custom_export(players):
         for position, doc_id in enumerate(doc_ids, start=1):
             yield build_export_row(
                 p.session.code, p.participant.code, p.participant.label, p.id_in_group,
-                p.feed_condition, p.nav_condition, doc_id, position,
+                p.feed_condition, p.field_maybe_none('nav_condition'), doc_id, position,
                 viewport, likes, replies, friction, promoted,
             )
 ```
+
+**Important:** use `p.field_maybe_none('nav_condition')` here, NOT bare `p.nav_condition`. Same reasoning as Task 10's `vars_for_template` fix: `nav_condition` is genuinely `None` for any participant who played the original `Feed` config, `custom_export` iterates over frozen `Player` instances (reloaded from the DB for the export, same as any other post-`creating_session` read), and oTree raises `TypeError` reading a `None`-valued field directly on a frozen instance. Unlike `vars_for_template`, no `or 'normal'` fallback is needed here — `None` flowing into the exported row is fine (the same pattern already used for `p.participant.label`, which is frequently `None` and exported as-is).
 
 - [ ] **Step 2: Sanity-check the module still parses**
 
