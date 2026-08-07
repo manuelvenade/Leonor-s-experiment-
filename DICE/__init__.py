@@ -7,6 +7,8 @@ import itertools
 import urllib.parse
 import json
 
+from feed_logic import assign_cycle_pairs, parse_json_field, build_export_row
+
 
 doc = """
 Mimic social media feeds with DICE.
@@ -57,17 +59,27 @@ def creating_session(subsession):
 
     # Check if the file contains any conditions and assign groups to it
     condition = subsession.session.config['condition_col']
-    if condition in processed_posts.columns:
-        feed_conditions = itertools.cycle(processed_posts[condition].unique())
-        subsession.feed_conditions = ', '.join(processed_posts[condition].unique())
+    nav_conditions = subsession.session.config.get('nav_conditions')
+    condition_present = condition in processed_posts.columns
+
+    if condition_present:
+        topics = list(processed_posts[condition].unique())
+        subsession.feed_conditions = ', '.join(topics)
+        if nav_conditions:
+            # Balanced shuffled round-robin across every (topic, nav_condition) cell
+            assignment_cycle = itertools.cycle(assign_cycle_pairs(topics, nav_conditions))
+        else:
+            # No nav_conditions configured (e.g. the original single-factor demo):
+            # preserve the original topic-only cycling behavior exactly.
+            assignment_cycle = itertools.cycle((topic, None) for topic in topics)
 
     for player in subsession.get_players():
         # Deep copy the DataFrame to ensure each player gets a unique shuffled version
         posts = processed_posts.copy()
 
         # Assign a condition to the player if conditions are present
-        if condition in posts.columns:
-            player.feed_condition = next(feed_conditions)
+        if condition_present:
+            player.feed_condition, player.nav_condition = next(assignment_cycle)
             posts = posts[posts[condition] == player.feed_condition]
 
         # Handle commented_post column
