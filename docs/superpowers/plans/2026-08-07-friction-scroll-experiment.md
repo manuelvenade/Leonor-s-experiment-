@@ -1261,7 +1261,13 @@ In the `document.addEventListener('DOMContentLoaded', function () { ... })` bloc
             const targetItem = pendingNavigation.items[pendingNavigation.index];
             const docId = targetItem && targetItem.dataset.docId ? parseInt(targetItem.dataset.docId) : null;
             if (docId !== null) {
-                frictionLog.push(computeFrictionEntry(docId, gateShownAt, Date.now()));
+                // Keep only the first gate encounter per video — a participant who
+                // swipes back and forth shouldn't have an earlier (often more
+                // representative) delay silently overwritten by a later one.
+                const alreadyLogged = frictionLog.some(function (entry) { return entry.doc_id === docId; });
+                if (!alreadyLogged) {
+                    frictionLog.push(computeFrictionEntry(docId, gateShownAt, Date.now()));
+                }
             }
 
             document.getElementById('friction-gate').classList.add('d-none');
