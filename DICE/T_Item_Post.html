@@ -1,0 +1,67 @@
+{{ if i.condition == player.feed_condition }}
+<div class="video-item" id="{{ i.doc_id }}" data-doc-id="{{ i.doc_id }}">
+
+    <!-- Video -->
+    <video class="video-player" loop playsinline preload="auto" muted>
+        {{ if i.video_is_url }}
+        <source src="{{ i.video_path }}" type="video/mp4">
+        {{ else }}
+        <source src="{{ static i.video_path }}" type="video/mp4">
+        {{ endif }}
+    </video>
+
+    <!-- Tap to play/pause -->
+    <div class="tap-area"></div>
+
+    <!-- Play/pause indicator -->
+    <div class="play-indicator"></div>
+
+    <!-- Top gradient -->
+    <div class="gradient-top"></div>
+
+    <!-- Bottom gradient -->
+    <div class="gradient-bottom"></div>
+
+    <!-- Right sidebar -->
+    <div class="right-sidebar">
+        <!-- Profile picture -->
+        <div class="sidebar-profile">
+            {{ if i.profile_pic_available }}
+            <img src="{{ i.user_image }}" alt="{{ i.username }}"
+                 style="width:44px;height:44px;object-fit:cover;border-radius:50%;border:2px solid #fff;">
+            {{ else }}
+            <div class="poster {{ i.color_class }}" style="width:44px;height:44px;border-radius:50%;border:2px solid #fff;">{{ i.icon }}</div>
+            {{ endif }}
+        </div>
+
+        <!-- Like -->
+        <div class="sidebar-action like-button" id="like_button_{{ i.doc_id }}" role="button" tabindex="0" aria-label="Like">
+            <i class="bi bi-heart like-icon" style="font-size:28px;"></i>
+            <span class="action-count like-count">{{ i.likes }}</span>
+        </div>
+
+        <!-- Comment -->
+        <div class="sidebar-action comment-button" id="comment_button_{{ i.doc_id }}" data-doc-id="{{ i.doc_id }}" role="button" tabindex="0" aria-label="Comment">
+            <i class="bi bi-chat-fill" style="font-size:26px;"></i>
+            <span class="action-count reply-count" id="reply_count_{{ i.doc_id }}">{{ i.replies }}</span>
+        </div>
+
+        <!-- Share -->
+        <div class="sidebar-action share-button" role="button" tabindex="0" aria-label="Share">
+            <i class="bi bi-share-fill" style="font-size:24px;"></i>
+            <span class="action-count">{{ i.reposts }}</span>
+        </div>
+    </div>
+
+    <!-- Bottom video info -->
+    <div class="video-info">
+        <p class="video-username">@{{ i.handle }}</p>
+        <p class="video-description">{{ i.text }}</p>
+        <div class="video-audio">
+            <i class="bi bi-music-note-beamed"></i>
+            <span class="audio-text">{{ i.username }} · original sound</span>
+        </div>
+    </div>
+
+</div>
+{{ endif }}
