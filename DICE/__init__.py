@@ -351,7 +351,8 @@ page_sequence = [A_Intro,
 
 def custom_export(players):
     yield ['session', 'participant_code', 'participant_label', 'participant_in_session',
-           'condition', 'doc_id', 'sequence_position', 'watch_time_seconds', 'liked', 'has_comment', 'comment']
+           'condition', 'nav_condition', 'doc_id', 'sequence_position', 'watch_time_seconds',
+           'liked', 'has_comment', 'comment', 'friction_delay_seconds', 'ad_clicked']
 
     for p in players:
         if not p.sequence:
@@ -359,28 +360,15 @@ def custom_export(players):
 
         doc_ids = [int(x.strip()) for x in p.sequence.split(',')]
 
-        def parse(field):
-            """Parse a JSON list field into a dict keyed by doc_id."""
-            try:
-                return {entry['doc_id']: entry for entry in json.loads(field or '[]')}
-            except (json.JSONDecodeError, KeyError, TypeError):
-                return {}
-
-        viewport = parse(p.viewport_data)
-        likes    = parse(p.likes_data)
-        replies  = parse(p.replies_data)
+        viewport = parse_json_field(p.viewport_data)
+        likes    = parse_json_field(p.likes_data)
+        replies  = parse_json_field(p.replies_data)
+        friction = parse_json_field(p.friction_data)
+        promoted = parse_json_field(p.promoted_post_clicks)
 
         for position, doc_id in enumerate(doc_ids, start=1):
-            yield [
-                p.session.code,
-                p.participant.code,
-                p.participant.label,
-                p.id_in_group,
-                p.feed_condition,
-                doc_id,
-                position,
-                viewport.get(doc_id, {}).get('duration', ''),
-                likes.get(doc_id,    {}).get('liked',    ''),
-                replies.get(doc_id,  {}).get('hasReply', ''),
-                replies.get(doc_id,  {}).get('reply',    ''),
-            ]
+            yield build_export_row(
+                p.session.code, p.participant.code, p.participant.label, p.id_in_group,
+                p.feed_condition, p.field_maybe_none('nav_condition'), doc_id, position,
+                viewport, likes, replies, friction, promoted,
+            )
