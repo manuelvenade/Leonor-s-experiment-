@@ -6,7 +6,7 @@ import random
 import itertools
 import urllib.parse
 
-from feed_logic import assign_cycle_pairs, parse_json_field, build_export_row
+from feed_logic import assign_cycle_pairs, parse_json_field, build_export_row, compute_session_aggregates
 
 
 doc = """
@@ -41,6 +41,10 @@ class Player(BasePlayer):
     replies_data = models.LongStringField(doc='tracks replies.', blank=True)
     promoted_post_clicks = models.LongStringField(doc='tracks the clicks on sponsored posts.', blank=True)
     friction_data = models.LongStringField(doc='tracks time-to-continue for each gated transition (friction condition only).', blank=True)
+
+    completed_feed = models.BooleanField(doc='whether the participant scrolled through every video before leaving the feed.', blank=True)
+    last_position_viewed = models.IntegerField(doc='the last video sequence position the participant reached before submitting.', blank=True)
+    session_duration_seconds = models.FloatField(doc='seconds from tapping Start to submitting the feed page.', blank=True)
 
     touch_capability = models.BooleanField(doc="indicates whether a participant uses a touch device to access survey.",
                                            blank=True)
@@ -287,7 +291,8 @@ class C_Feed(Page):
     @staticmethod
     def get_form_fields(player: Player):
         fields = ['likes_data', 'replies_data', 'promoted_post_clicks', 'friction_data', 'touch_capability',
-                   'device_type', 'screen_resolution', 'viewport_data']
+                   'device_type', 'screen_resolution', 'viewport_data',
+                   'completed_feed', 'last_position_viewed', 'session_duration_seconds']
         return fields
 
     @staticmethod
@@ -350,8 +355,12 @@ page_sequence = [A_Intro,
 
 def custom_export(players):
     yield ['session', 'participant_code', 'participant_label', 'participant_in_session',
-           'condition', 'nav_condition', 'doc_id', 'sequence_position', 'watch_time_seconds',
-           'liked', 'has_comment', 'comment', 'friction_delay_seconds', 'ad_clicked']
+           'condition', 'nav_condition', 'doc_id', 'sequence_position',
+           'watch_time_seconds', 'video_length_seconds', 'watch_percentage',
+           'liked', 'has_comment', 'comment',
+           'friction_delay_seconds', 'voluntary_hesitation_seconds', 'ad_clicked',
+           'completed_feed', 'last_position_viewed',
+           'total_watch_time_seconds', 'session_duration_seconds', 'completion_rate']
 
     for p in players:
         if not p.sequence:
@@ -365,9 +374,26 @@ def custom_export(players):
         friction = parse_json_field(p.friction_data)
         promoted = parse_json_field(p.promoted_post_clicks)
 
+        aggregates = compute_session_aggregates(
+            viewport,
+            p.field_maybe_none('last_position_viewed') or 0,
+            len(doc_ids),
+            p.field_maybe_none('session_duration_seconds'),
+        )
+
+        participant = dict(
+            session_code=p.session.code,
+            participant_code=p.participant.code,
+            participant_label=p.participant.label,
+            id_in_group=p.id_in_group,
+            feed_condition=p.feed_condition,
+            nav_condition=p.field_maybe_none('nav_condition'),
+            completed_feed=p.field_maybe_none('completed_feed'),
+            last_position_viewed=p.field_maybe_none('last_position_viewed'),
+            total_watch_time_seconds=aggregates['total_watch_time_seconds'],
+            session_duration_seconds=aggregates['session_duration_seconds'],
+            completion_rate=aggregates['completion_rate'],
+        )
+
         for position, doc_id in enumerate(doc_ids, start=1):
-            yield build_export_row(
-                p.session.code, p.participant.code, p.participant.label, p.id_in_group,
-                p.feed_condition, p.field_maybe_none('nav_condition'), doc_id, position,
-                viewport, likes, replies, friction, promoted,
-            )
+            yield build_export_row(participant, doc_id, position, viewport, likes, replies, friction, promoted)
