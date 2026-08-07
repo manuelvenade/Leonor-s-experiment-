@@ -39,12 +39,14 @@ attributed to differing starting stats or differing video order.
   manipulation layered on top — it does not change which videos are shown.
 
 **Friction scroll**, specifically: after every video, a full-screen black
-interstitial with a "Continue" button appears. The participant must click
-Continue before the next video is revealed. This applies to *every*
-transition — forward, backward (re-watching a previous video), and the final
-transition into the end card. Normal-scroll participants never see this
-screen; navigation behaves exactly as it does today (free swipe/arrow-key
-scrolling).
+interstitial appears showing a countdown from 3 to 0, with a "Continue"
+button that stays disabled until the countdown finishes. Once it hits 0 the
+button becomes clickable, and the participant must still click it before the
+next video is revealed — the countdown enforces a minimum wait, it does not
+auto-advance on its own. This applies to *every* transition — forward,
+backward (re-watching a previous video), and the final transition into the
+end card. Normal-scroll participants never see this screen; navigation
+behaves exactly as it does today (free swipe/arrow-key scrolling).
 
 ## Assignment mechanism
 
@@ -125,15 +127,23 @@ All navigation currently funnels through a single function, `navigateTo()` in
 For `nav_condition === 'friction'`:
 
 1. On any call to `navigateTo(targetIndex, items)`, instead of scrolling
-   immediately: record `gateShownAt = Date.now()`, show the overlay, and
-   store `targetIndex` as pending.
-2. On Continue click: compute `delay_seconds = (Date.now() - gateShownAt) /
-   1000`, record `{ doc_id: <target item's doc_id>, delay_seconds }` into the
-   in-memory friction log, hide the overlay, then perform the actual
-   `scrollIntoView` navigation to `targetIndex`.
-3. The end-card counts as a normal transition target — swiping from the last
-   video into the end-card is gated the same way.
-4. The very first video (on initial "Start" tap) is not gated — there is no
+   immediately: record `gateShownAt = Date.now()`, show the overlay with its
+   Continue button disabled, store `targetIndex` as pending, and start a
+   3-to-0 countdown display.
+2. The countdown ticks down once per second (implemented as a short-interval
+   timer computing remaining time from `gateShownAt`, not a naive per-second
+   counter, so it stays accurate even if the tab is backgrounded). At 0, the
+   Continue button is re-enabled — the countdown never advances the feed by
+   itself.
+3. On Continue click (only possible once enabled): compute
+   `delay_seconds = (Date.now() - gateShownAt) / 1000`, record
+   `{ doc_id: <target item's doc_id>, delay_seconds }` into the in-memory
+   friction log, hide the overlay, then perform the actual `scrollIntoView`
+   navigation to `targetIndex`. Because the button is disabled for the first
+   3 seconds, `delay_seconds` is always at least ~3.
+4. The end-card counts as a normal transition target — swiping from the last
+   video into the end-card is gated (and counted down) the same way.
+5. The very first video (on initial "Start" tap) is not gated — there is no
    transition *into* it from another feed item.
 
 For `nav_condition === 'normal'`, `navigateTo()` behaves exactly as it does

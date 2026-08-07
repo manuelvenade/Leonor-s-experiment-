@@ -4,7 +4,7 @@
 
 **Goal:** Implement a 3×2 between-subjects friction-scroll experiment (SPORT / FOOD / TRAVEL topic × normal / friction navigation) in the DICE TikTok oTree app, per the approved design spec at `docs/superpowers/specs/2026-08-07-friction-scroll-experiment-design.md`.
 
-**Architecture:** Two new `Player` fields (`nav_condition`, `friction_data`) and a balanced shuffled-cycle assignment mechanism extend the existing single-factor `condition` system already used for content conditions. A new pure-Python module, `feed_logic.py`, holds unit-testable assignment/parsing/export logic *outside* the `DICE` app package — this sidesteps a real constraint: `DICE/__init__.py` does `from otree.api import *` and defines Django ORM model classes at import time, which requires a configured Django app registry and cannot be safely imported by a bare `pytest` run. Keeping the pure logic in a dependency-free sibling module means it's testable with plain `pytest`, no Django bootstrap required. The friction-scroll gate is a single reusable full-screen overlay intercepting the existing `navigateTo()` choke point in `video_feed.js`; its pure delay-calculation logic is isolated into a new dependency-free `friction.js` file so it's testable under plain Node without a build step, following the same separate-global-script pattern this codebase already uses for `format_numbers.js` / `mobile.js`.
+**Architecture:** Two new `Player` fields (`nav_condition`, `friction_data`) and a balanced shuffled-cycle assignment mechanism extend the existing single-factor `condition` system already used for content conditions. A new pure-Python module, `feed_logic.py`, holds unit-testable assignment/parsing/export logic *outside* the `DICE` app package — this sidesteps a real constraint: `DICE/__init__.py` does `from otree.api import *` and defines Django ORM model classes at import time, which requires a configured Django app registry and cannot be safely imported by a bare `pytest` run. Keeping the pure logic in a dependency-free sibling module means it's testable with plain `pytest`, no Django bootstrap required. The friction-scroll gate is a single reusable full-screen overlay intercepting the existing `navigateTo()` choke point in `video_feed.js`; it shows a 3-to-0 countdown that keeps its Continue button disabled until the count finishes (a forced minimum wait, not an auto-advance — the participant still clicks Continue). Its pure delay/countdown-calculation logic is isolated into a new dependency-free `friction.js` file so it's testable under plain Node without a build step, following the same separate-global-script pattern this codebase already uses for `format_numbers.js` / `mobile.js`.
 
 **Tech Stack:** Python 3 / oTree 5 / pandas (existing). Adds `pytest` (dev-only) for backend logic tests and relies on Node's built-in `assert` module (zero npm dependencies — no `package.json` introduced) for the one pure JS module. This repo has no existing test runner or build step. DOM/video-dependent interaction code (swipe handling, overlay show/hide, video playback) is **not** covered by automated tests — it's verified by hand via `otree devserver` in a real browser, consistent with the project's existing "Tested on: Chrome / macOS" posture. This is a deliberate scope decision: standing up a full browser-test framework (Jest+jsdom, Playwright, etc.) for one feature in a project with zero prior test infrastructure would be disproportionate; pure logic is extracted and tested, DOM glue is manually verified.
 
@@ -785,11 +785,11 @@ to:
         return dict(
             posts=posts_df.to_dict('index'),
             label_available=label_available,
-            nav_condition=player.nav_condition or 'normal',
+            nav_condition=player.field_maybe_none('nav_condition') or 'normal',
         )
 ```
 
-(Defaulting to `'normal'` means the original `Feed` demo — where `nav_condition` is always blank — renders with friction gating fully disabled, exactly as it does today.)
+(Defaulting to `'normal'` means the original `Feed` demo — where `nav_condition` is always blank — renders with friction gating fully disabled, exactly as it does today. **Use `player.field_maybe_none('nav_condition')`, not bare `player.nav_condition`** — oTree freezes `Player` instances after `creating_session` finishes, and reading a genuinely-`None`-valued field directly on a frozen instance raises `TypeError`, not just returning `None`. Since `nav_condition` stays unset for the original `Feed` config (Task 9's fallback branch assigns `None` there), a bare attribute read would crash on exactly that config the moment this page renders. `field_maybe_none()` is oTree's documented escape hatch for reading a nullable field without triggering that guard.)
 
 - [ ] **Step 3: Sanity-check the module still parses**
 
@@ -873,10 +873,12 @@ def custom_export(players):
         for position, doc_id in enumerate(doc_ids, start=1):
             yield build_export_row(
                 p.session.code, p.participant.code, p.participant.label, p.id_in_group,
-                p.feed_condition, p.nav_condition, doc_id, position,
+                p.feed_condition, p.field_maybe_none('nav_condition'), doc_id, position,
                 viewport, likes, replies, friction, promoted,
             )
 ```
+
+**Important:** use `p.field_maybe_none('nav_condition')` here, NOT bare `p.nav_condition`. Same reasoning as Task 10's `vars_for_template` fix: `nav_condition` is genuinely `None` for any participant who played the original `Feed` config, `custom_export` iterates over frozen `Player` instances (reloaded from the DB for the export, same as any other post-`creating_session` read), and oTree raises `TypeError` reading a `None`-valued field directly on a frozen instance. Unlike `vars_for_template`, no `or 'normal'` fallback is needed here — `None` flowing into the exported row is fine (the same pattern already used for `p.participant.label`, which is frequently `None` and exported as-is).
 
 - [ ] **Step 2: Sanity-check the module still parses**
 
@@ -908,7 +910,7 @@ git commit -m "feat: export nav_condition, friction_delay_seconds, and ad_clicke
 `tests/friction.test.js`:
 ```javascript
 const assert = require('assert');
-const { shouldGateNavigation, computeFrictionEntry } = require('../DICE/static/js/friction.js');
+const { shouldGateNavigation, computeFrictionEntry, getCountdownRemaining } = require('../DICE/static/js/friction.js');
 
 // shouldGateNavigation
 assert.strictEqual(shouldGateNavigation('friction'), true);
@@ -921,6 +923,13 @@ const entry = computeFrictionEntry(42, 1000, 2500);
 assert.strictEqual(entry.doc_id, 42);
 assert.strictEqual(entry.delay_seconds, 1.5);
 console.log('PASS: computeFrictionEntry computes delay in seconds, keyed by doc_id');
+
+// getCountdownRemaining
+assert.strictEqual(getCountdownRemaining(1000, 1000, 3), 3);
+assert.strictEqual(getCountdownRemaining(1000, 2500, 3), 2);
+assert.strictEqual(getCountdownRemaining(1000, 4000, 3), 0);
+assert.strictEqual(getCountdownRemaining(1000, 9000, 3), 0);
+console.log('PASS: getCountdownRemaining counts down and floors at zero');
 
 console.log('All friction.test.js tests passed.');
 ```
@@ -946,8 +955,13 @@ function computeFrictionEntry(docId, gateShownAt, now) {
     return { doc_id: docId, delay_seconds: Number(((now - gateShownAt) / 1000).toFixed(3)) };
 }
 
+function getCountdownRemaining(gateShownAt, now, countdownSeconds) {
+    const elapsed = (now - gateShownAt) / 1000;
+    return Math.max(0, Math.ceil(countdownSeconds - elapsed));
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { shouldGateNavigation, computeFrictionEntry };
+    module.exports = { shouldGateNavigation, computeFrictionEntry, getCountdownRemaining };
 }
 ```
 
@@ -958,6 +972,7 @@ Expected:
 ```
 PASS: shouldGateNavigation only gates the friction condition
 PASS: computeFrictionEntry computes delay in seconds, keyed by doc_id
+PASS: getCountdownRemaining counts down and floors at zero
 All friction.test.js tests passed.
 ```
 
@@ -1042,12 +1057,17 @@ Then, still in `DICE/C_Feed.html`, add the overlay markup right after the loadin
 
 <!-- Friction gate overlay -->
 <div id="friction-gate" class="d-none">
-    <button id="frictionContinueBtn" type="button">Continue</button>
+    <div class="friction-gate-content">
+        <div id="friction-countdown">3</div>
+        <button id="frictionContinueBtn" type="button" disabled>Continue</button>
+    </div>
 </div>
 
 <!-- Main Content -->
 <div id="mainContent" style="display:none;">
 ```
+
+The countdown starts the button disabled by default in the markup; `video_feed.js` (Task 14) drives the actual countdown and re-enables it once it reaches zero.
 
 - [ ] **Step 3: Add friction gate styles**
 
@@ -1063,6 +1083,17 @@ In `DICE/static/css/tiktok.css`, after the `/* ---- Loading screen ---- */` bloc
     align-items: center;
     justify-content: center;
 }
+.friction-gate-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+#friction-countdown {
+    font-size: 48px;
+    font-weight: 700;
+    color: #fff;
+}
 #frictionContinueBtn {
     background: #fe2c55;
     border: none;
@@ -1074,6 +1105,11 @@ In `DICE/static/css/tiktok.css`, after the `/* ---- Loading screen ---- */` bloc
     cursor: pointer;
 }
 #frictionContinueBtn:active { opacity: 0.85; }
+#frictionContinueBtn:disabled {
+    background: #4a4a4a;
+    color: rgba(255,255,255,0.5);
+    cursor: not-allowed;
+}
 ```
 
 (`#friction-gate` uses Bootstrap's existing `.d-none` utility class to start hidden, same pattern already used for `#loadingScreen`.)
@@ -1124,8 +1160,10 @@ let navLockTimer = null;
 
 // Friction-scroll state
 const navCondition = window.NAV_CONDITION || 'normal';
+const FRICTION_COUNTDOWN_SECONDS = 3;
 let pendingNavigation = null; // { index, items }
 let gateShownAt = null;
+let countdownTimer = null;
 const frictionLog = [];
 const promotedClicks = [];
 ```
@@ -1157,6 +1195,7 @@ function navigateTo(index, items) {
         pendingNavigation = { index: index, items: items };
         gateShownAt = Date.now();
         document.getElementById('friction-gate').classList.remove('d-none');
+        startFrictionCountdown();
         return;
     }
 
@@ -1171,7 +1210,30 @@ function performNavigation(index, items) {
     clearTimeout(navLockTimer);
     navLockTimer = setTimeout(function () { isNavigating = false; }, 500);
 }
+
+function startFrictionCountdown() {
+    const countdownEl = document.getElementById('friction-countdown');
+    const continueBtn = document.getElementById('frictionContinueBtn');
+    continueBtn.disabled = true;
+
+    clearInterval(countdownTimer);
+
+    function tick() {
+        const remaining = getCountdownRemaining(gateShownAt, Date.now(), FRICTION_COUNTDOWN_SECONDS);
+        countdownEl.textContent = remaining;
+        if (remaining <= 0) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            continueBtn.disabled = false;
+        }
+    }
+
+    tick();
+    countdownTimer = setInterval(tick, 100);
+}
 ```
+
+(`startFrictionCountdown` shows the gate's Continue button as disabled, then ticks `#friction-countdown` down from `FRICTION_COUNTDOWN_SECONDS` to 0 using the pure `getCountdownRemaining` from `friction.js` — once it hits 0 the button is re-enabled. The participant still has to click Continue after the count finishes; the countdown only enforces a minimum wait, it doesn't auto-advance.)
 
 - [ ] **Step 3: Wire the Continue button**
 
@@ -1237,7 +1299,7 @@ to:
 - [ ] **Step 5: Re-run the friction.js node test to confirm the shared functions still resolve correctly**
 
 Run: `node tests/friction.test.js`
-Expected: same 2 PASS lines as Task 12 (video_feed.js calling `shouldGateNavigation`/`computeFrictionEntry` as globals doesn't change friction.js itself).
+Expected: same 3 PASS lines as Task 12 (video_feed.js calling `shouldGateNavigation`/`computeFrictionEntry`/`getCountdownRemaining` as globals doesn't change friction.js itself).
 
 - [ ] **Step 6: Commit**
 
@@ -1357,7 +1419,9 @@ In a browser, go to `http://localhost:8000`, start a demo session for **Friction
 
 Open a second play link from the same demo session (round-robin assignment means the next participant should land in a different cell — open several links if needed until you see the black gate appear).
 - Confirm after every video, swiping forward shows a full-screen black "Continue" screen, and the next video only appears after clicking Continue.
-- Confirm swiping backward to a previous video also shows the gate.
+- Confirm the gate shows a countdown from 3 to 0, that the Continue button is visibly disabled/grayed out while the countdown is running, and that it only becomes clickable once the countdown reaches 0.
+- Confirm clicking Continue before the countdown finishes does nothing (button is genuinely disabled, not just styled to look disabled).
+- Confirm swiping backward to a previous video also shows the gate with its own fresh countdown.
 - Confirm the transition into the end card also shows the gate.
 - Complete the feed and submit.
 
