@@ -1204,6 +1204,7 @@ function navigateTo(index, items) {
     if (index < 0 || index >= items.length) return;
 
     if (shouldGateNavigation(navCondition)) {
+        if (pendingNavigation) return; // gate already showing — ignore repeat triggers (e.g. held arrow keys)
         pendingNavigation = { index: index, items: items };
         gateShownAt = Date.now();
         document.getElementById('friction-gate').classList.remove('d-none');
@@ -1245,7 +1246,7 @@ function startFrictionCountdown() {
 }
 ```
 
-(`startFrictionCountdown` shows the gate's Continue button as disabled, then ticks `#friction-countdown` down from `FRICTION_COUNTDOWN_SECONDS` to 0 using the pure `getCountdownRemaining` from `friction.js` — once it hits 0 the button is re-enabled. The participant still has to click Continue after the count finishes; the countdown only enforces a minimum wait, it doesn't auto-advance.)
+(`startFrictionCountdown` shows the gate's Continue button as disabled, then ticks `#friction-countdown` down from `FRICTION_COUNTDOWN_SECONDS` to 0 using the pure `getCountdownRemaining` from `friction.js` — once it hits 0 the button is re-enabled. The participant still has to click Continue after the count finishes; the countdown only enforces a minimum wait, it doesn't auto-advance. The `if (pendingNavigation) return;` guard matters because the gate overlay only blocks *touch* hit-testing (it's an opaque `position:fixed` element covering the feed) — keyboard navigation is bound at the `document` level and isn't blocked by DOM stacking, so a held arrow key would otherwise keep re-entering this branch, silently resetting `pendingNavigation`/`gateShownAt` and restarting the countdown for as long as the key is held.)
 
 - [ ] **Step 3: Wire the Continue button**
 
@@ -1311,7 +1312,7 @@ to:
 - [ ] **Step 5: Re-run the friction.js node test to confirm the shared functions still resolve correctly**
 
 Run: `node tests/friction.test.js`
-Expected: same 3 PASS lines as Task 12 (video_feed.js calling `shouldGateNavigation`/`computeFrictionEntry`/`getCountdownRemaining` as globals doesn't change friction.js itself).
+Expected: same 4 PASS lines as Task 12 (video_feed.js calling `shouldGateNavigation`/`computeFrictionEntry`/`getCountdownRemaining` as globals doesn't change friction.js itself).
 
 - [ ] **Step 6: Commit**
 
