@@ -287,8 +287,8 @@ class C_Feed(Page):
 
     @staticmethod
     def get_form_fields(player: Player):
-        fields = ['likes_data', 'replies_data', 'promoted_post_clicks', 'touch_capability', 'device_type', 'screen_resolution',
-                   'viewport_data']
+        fields = ['likes_data', 'replies_data', 'promoted_post_clicks', 'friction_data', 'touch_capability',
+                   'device_type', 'screen_resolution', 'viewport_data']
         return fields
 
     @staticmethod
@@ -299,6 +299,7 @@ class C_Feed(Page):
         return dict(
             posts=posts_df.to_dict('index'),
             label_available=label_available,
+            nav_condition=player.field_maybe_none('nav_condition') or 'normal',
         )
 
     @staticmethod
