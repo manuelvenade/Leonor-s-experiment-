@@ -785,11 +785,11 @@ to:
         return dict(
             posts=posts_df.to_dict('index'),
             label_available=label_available,
-            nav_condition=player.nav_condition or 'normal',
+            nav_condition=player.field_maybe_none('nav_condition') or 'normal',
         )
 ```
 
-(Defaulting to `'normal'` means the original `Feed` demo — where `nav_condition` is always blank — renders with friction gating fully disabled, exactly as it does today.)
+(Defaulting to `'normal'` means the original `Feed` demo — where `nav_condition` is always blank — renders with friction gating fully disabled, exactly as it does today. **Use `player.field_maybe_none('nav_condition')`, not bare `player.nav_condition`** — oTree freezes `Player` instances after `creating_session` finishes, and reading a genuinely-`None`-valued field directly on a frozen instance raises `TypeError`, not just returning `None`. Since `nav_condition` stays unset for the original `Feed` config (Task 9's fallback branch assigns `None` there), a bare attribute read would crash on exactly that config the moment this page renders. `field_maybe_none()` is oTree's documented escape hatch for reading a nullable field without triggering that guard.)
 
 - [ ] **Step 3: Sanity-check the module still parses**
 
