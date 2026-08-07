@@ -34,26 +34,71 @@ def parse_json_field(raw_json):
         return {}
 
 
-def build_export_row(session_code, participant_code, participant_label, id_in_group,
-                      feed_condition, nav_condition, doc_id, position,
-                      viewport, likes, replies, friction, promoted):
-    """Assemble one custom_export row from parsed per-doc_id lookup dicts."""
+def build_export_row(participant, doc_id, position, viewport, likes, replies, friction, promoted):
+    """Assemble one custom_export row from parsed per-doc_id lookup dicts.
+
+    `participant` is a dict of participant-level values that stay constant
+    across every row for a given participant: session_code, participant_code,
+    participant_label, id_in_group, feed_condition, nav_condition,
+    completed_feed, last_position_viewed, total_watch_time_seconds,
+    session_duration_seconds, completion_rate.
+    """
+    viewport_entry = viewport.get(doc_id, {})
+    watch_time = viewport_entry.get('duration', '')
+    video_length = viewport_entry.get('video_length_seconds', '')
+
+    watch_percentage = ''
+    if isinstance(watch_time, (int, float)) and isinstance(video_length, (int, float)) and video_length > 0:
+        watch_percentage = round(watch_time / video_length * 100, 1)
+
+    friction_entry = friction.get(doc_id, {})
+
     return [
-        session_code,
-        participant_code,
-        participant_label,
-        id_in_group,
-        feed_condition,
-        nav_condition,
+        participant['session_code'],
+        participant['participant_code'],
+        participant['participant_label'],
+        participant['id_in_group'],
+        participant['feed_condition'],
+        participant['nav_condition'],
         doc_id,
         position,
-        viewport.get(doc_id, {}).get('duration', ''),
+        watch_time,
+        video_length,
+        watch_percentage,
         likes.get(doc_id, {}).get('liked', ''),
         replies.get(doc_id, {}).get('hasReply', ''),
         replies.get(doc_id, {}).get('reply', ''),
-        friction.get(doc_id, {}).get('delay_seconds', ''),
+        friction_entry.get('delay_seconds', ''),
+        friction_entry.get('voluntary_hesitation_seconds', ''),
         promoted.get(doc_id, {}).get('clicked', ''),
+        participant['completed_feed'],
+        participant['last_position_viewed'],
+        participant['total_watch_time_seconds'],
+        participant['session_duration_seconds'],
+        participant['completion_rate'],
     ]
+
+
+def compute_session_aggregates(viewport, last_position_viewed, total_videos, session_duration_seconds):
+    """Compute participant-level session aggregates from parsed viewport data.
+
+    total_watch_time_seconds sums each video's dwell time (malformed/missing
+    entries are skipped rather than raising). completion_rate is
+    last_position_viewed / total_videos, or 0 if total_videos is 0.
+    session_duration_seconds is passed through unchanged — it's a single
+    client-reported value, not derived from viewport.
+    """
+    total_watch_time = sum(
+        entry.get('duration', 0) for entry in viewport.values()
+        if isinstance(entry.get('duration'), (int, float))
+    )
+    completion_rate = round(last_position_viewed / total_videos, 3) if total_videos else 0
+
+    return {
+        'total_watch_time_seconds': round(total_watch_time, 3),
+        'completion_rate': completion_rate,
+        'session_duration_seconds': session_duration_seconds,
+    }
 
 
 def validate_matched_stats(df, group_col='condition', position_col='sequence',
