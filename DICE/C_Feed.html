@@ -42,8 +42,9 @@
 <!-- Friction gate overlay -->
 <div id="friction-gate" class="d-none">
     <div class="friction-gate-content">
-        <div id="friction-countdown">3</div>
-        <button id="frictionContinueBtn" type="button" disabled>Continue</button>
+        <!-- Starting value kept in sync with FRICTION_COUNTDOWN_SECONDS in video_feed.js -->
+        <div id="friction-countdown" aria-live="polite">3</div>
+        <button id="frictionContinueBtn" type="button" disabled aria-label="Continue (available when countdown reaches zero)">Continue</button>
     </div>
 </div>
 
