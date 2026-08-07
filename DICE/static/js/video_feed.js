@@ -16,6 +16,10 @@ let countdownTimer = null;
 const frictionLog = [];
 const promotedClicks = [];
 
+// Session-level metrics
+let sessionStartedAt = null;
+const videoDurations = {}; // { docId: seconds } — each clip's own length, from <video>.duration
+
 // Play-time tracking
 const playData = {}; // { docId: { totalSeconds, playStartTime } }
 
@@ -46,7 +50,11 @@ function serializeViewportData() {
     flushPlayData();
     return JSON.stringify(
         Object.keys(playData).map(function (docId) {
-            return { doc_id: parseInt(docId), duration: Number(playData[docId].totalSeconds.toFixed(3)) };
+            const entry = { doc_id: parseInt(docId), duration: Number(playData[docId].totalSeconds.toFixed(3)) };
+            if (videoDurations[docId] !== undefined) {
+                entry.video_length_seconds = Number(videoDurations[docId].toFixed(3));
+            }
+            return entry;
         })
     );
 }
@@ -93,6 +101,7 @@ const videoObserver = new IntersectionObserver(function (entries) {
 // Tap-to-start button: unlock audio and reveal feed
 document.getElementById('startBtn').addEventListener('click', function () {
     audioUnlocked = true;
+    sessionStartedAt = Date.now();
 
     document.getElementById('loadingScreen').classList.add('d-none');
     const mainContent = document.getElementById('mainContent');
@@ -107,6 +116,11 @@ document.getElementById('startBtn').addEventListener('click', function () {
             video.addEventListener('play', function () { onVideoPlay(docId); });
             video.addEventListener('pause', function () { onVideoPause(docId); });
             video.addEventListener('ended', function () { onVideoPause(docId); });
+            video.addEventListener('loadedmetadata', function () {
+                if (isFinite(video.duration)) {
+                    videoDurations[docId] = video.duration;
+                }
+            });
         }
     });
 
@@ -244,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // representative) delay silently overwritten by a later one.
                 const alreadyLogged = frictionLog.some(function (entry) { return entry.doc_id === docId; });
                 if (!alreadyLogged) {
-                    frictionLog.push(computeFrictionEntry(docId, gateShownAt, Date.now()));
+                    frictionLog.push(computeFrictionEntry(docId, gateShownAt, Date.now(), FRICTION_COUNTDOWN_SECONDS));
                 }
             }
 
@@ -467,6 +481,15 @@ function collectAllData() {
     document.getElementById('promoted_post_clicks').value = JSON.stringify(promotedClicks);
     document.getElementById('friction_data').value = JSON.stringify(frictionLog);
     document.getElementById('viewport_data').value = serializeViewportData();
+
+    // Session-level metrics
+    const totalVideos = document.querySelectorAll('.video-item[data-doc-id]').length;
+    const completedFeed = currentIndex >= totalVideos;
+    const lastPositionViewed = Math.min(currentIndex + 1, totalVideos);
+    document.getElementById('completed_feed').value = completedFeed;
+    document.getElementById('last_position_viewed').value = lastPositionViewed;
+    document.getElementById('session_duration_seconds').value =
+        sessionStartedAt !== null ? ((Date.now() - sessionStartedAt) / 1000).toFixed(3) : '';
 
     console.log('Data collected. Likes:', likes.length, 'Replies:', replies.length);
 }
