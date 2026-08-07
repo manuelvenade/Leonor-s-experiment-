@@ -30,6 +30,7 @@ class Group(BaseGroup):
 
 class Player(BasePlayer):
     feed_condition = models.StringField(doc='indicates the feed condition a player is randomly assigned to')
+    nav_condition = models.StringField(doc='indicates the navigation condition (normal or friction) a player is randomly assigned to', blank=True)
     sequence = models.StringField(doc='prints the sequence of posts based on doc_id')
 
     scroll_sequence = models.LongStringField(doc='tracks the sequence of feed items a participant scrolled through.')
@@ -38,6 +39,7 @@ class Player(BasePlayer):
     likes_data = models.LongStringField(doc='tracks likes.', blank=True)
     replies_data = models.LongStringField(doc='tracks replies.', blank=True)
     promoted_post_clicks = models.LongStringField(doc='tracks the clicks on sponsored posts.', blank=True)
+    friction_data = models.LongStringField(doc='tracks time-to-continue for each gated transition (friction condition only).', blank=True)
 
     touch_capability = models.BooleanField(doc="indicates whether a participant uses a touch device to access survey.",
                                            blank=True)
