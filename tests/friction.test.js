@@ -20,4 +20,11 @@ assert.strictEqual(getCountdownRemaining(1000, 4000, 3), 0);
 assert.strictEqual(getCountdownRemaining(1000, 9000, 3), 0);
 console.log('PASS: getCountdownRemaining counts down and floors at zero');
 
+// Clock skew: now before gateShownAt (e.g. a backward-jumping system clock)
+// must not produce a negative delay or an inflated countdown.
+const skewedEntry = computeFrictionEntry(1, 5000, 1000);
+assert.strictEqual(skewedEntry.delay_seconds, 0);
+assert.strictEqual(getCountdownRemaining(5000, 1000, 3), 3);
+console.log('PASS: negative elapsed time (clock skew) clamps to zero');
+
 console.log('All friction.test.js tests passed.');

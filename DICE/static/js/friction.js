@@ -7,11 +7,12 @@ function shouldGateNavigation(navCondition) {
 }
 
 function computeFrictionEntry(docId, gateShownAt, now) {
-    return { doc_id: docId, delay_seconds: Number(((now - gateShownAt) / 1000).toFixed(3)) };
+    const elapsed = Math.max(0, (now - gateShownAt) / 1000);
+    return { doc_id: docId, delay_seconds: Number(elapsed.toFixed(3)) };
 }
 
 function getCountdownRemaining(gateShownAt, now, countdownSeconds) {
-    const elapsed = (now - gateShownAt) / 1000;
+    const elapsed = Math.max(0, (now - gateShownAt) / 1000);
     return Math.max(0, Math.ceil(countdownSeconds - elapsed));
 }
 
