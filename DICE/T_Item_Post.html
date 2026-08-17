@@ -5,6 +5,7 @@
     <video class="video-player" loop playsinline preload="auto" muted>
         {{ if i.video_is_url }}
         <source src="{{ i.video_path }}" type="video/mp4">
+        <source src="{{ static i.video_local_fallback }}" type="video/mp4">
         {{ else }}
         <source src="{{ static i.video_path }}" type="video/mp4">
         {{ endif }}

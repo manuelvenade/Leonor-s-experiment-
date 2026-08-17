@@ -26,12 +26,12 @@ def test_csv_has_three_topics_with_six_positions_each():
         assert sorted(group['sequence'].tolist()) == [1, 2, 3, 4, 5, 6]
 
 
-def test_csv_has_exactly_one_ad_per_topic_at_position_five():
+def test_csv_has_exactly_one_ad_per_topic_at_position_six():
     df = load_csv()
     for condition, group in df.groupby('condition'):
         ad_rows = group[group['is_ad'] == 1]
         assert len(ad_rows) == 1
-        assert ad_rows.iloc[0]['sequence'] == 5
+        assert ad_rows.iloc[0]['sequence'] == 6
 
 
 def test_csv_ad_content_is_identical_across_topics():

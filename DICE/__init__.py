@@ -188,6 +188,7 @@ def prepare_video(df):
         df['video'] = ''
         df['video_is_url'] = False
         df['video_path'] = ''
+        df['video_local_fallback'] = ''
         return df
     df['video'] = df['video'].fillna('').astype(str)
     df['video_is_url'] = df['video'].apply(is_url)
@@ -195,6 +196,12 @@ def prepare_video(df):
     df['video_path'] = df.apply(
         lambda row: row['video'] if row['video_is_url'] else (f"mp4/{row['video']}" if row['video'] else ''),
         axis=1
+    )
+    # Fallback source (same basename under mp4/) so a remote URL that hasn't
+    # been uploaded yet, or is briefly unreachable, can still play from a
+    # local copy dropped into DICE/static/mp4/ under the same filename.
+    df['video_local_fallback'] = df['video'].apply(
+        lambda v: f"mp4/{urllib.parse.urlparse(v).path.rsplit('/', 1)[-1]}" if v else ''
     )
     return df
 
