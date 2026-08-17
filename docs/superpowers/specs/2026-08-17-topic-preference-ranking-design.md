@@ -168,7 +168,9 @@ rank_topics=True,
 - `DICE/B_TopicRanking.html` — new template (ranking UI)
 - `DICE/static/js/topic_ranking.js` — new pure reorder-logic module + DOM
   wiring, mirroring `friction.js`
-- `DICE/static/css/tiktok.css` — ranking list styles
+- `DICE/static/css/styles.css` — ranking list styles (the shared onboarding-page
+  stylesheet already used by `A_Intro`/`B_Briefing`'s light bootstrap-card
+  layout — `tiktok.css` is the dark video-feed theme and doesn't apply here)
 - `tests/test_feed_logic_export.py`, new `tests/test_topic_ranking.js` (or
   similar) — coverage for the new helpers
 - `docs/superpowers/specs/2026-08-07-friction-scroll-experiment-design.md` —
