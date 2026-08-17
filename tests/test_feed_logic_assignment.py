@@ -26,3 +26,16 @@ def test_assign_cycle_pairs_is_deterministic_for_a_given_seed():
     pairs_b = assign_cycle_pairs(topics, nav_conditions, rng=random.Random(7))
 
     assert pairs_a == pairs_b
+
+
+def test_assign_cycle_pairs_generalizes_to_preference_alignment():
+    alignments = ['most', 'least']
+    nav_conditions = ['normal', 'friction']
+
+    pairs = assign_cycle_pairs(alignments, nav_conditions, rng=random.Random(3))
+
+    assert len(pairs) == 4
+    assert set(pairs) == {
+        ('most', 'normal'), ('most', 'friction'),
+        ('least', 'normal'), ('least', 'friction'),
+    }

@@ -66,6 +66,46 @@ def finalize_player_sequence(posts):
     return posts
 
 
+def select_ranked_topic(ranking, alignment):
+    """Pick the topic to show from a participant's full preference ranking.
+
+    `ranking` is a list ordered most-preferred first. `alignment` is
+    'most' or 'least' — which end of the ranking gets shown.
+    """
+    return ranking[0] if alignment == 'most' else ranking[-1]
+
+
+def parse_topic_ranking(raw_json, fallback_topics):
+    """Parse a participant's submitted topic ranking.
+
+    Returns the parsed list if it's valid JSON containing exactly the same
+    topics as `fallback_topics` (in any order); otherwise returns
+    `fallback_topics` unchanged, so a missing/corrupt/tampered ranking still
+    yields a usable (if uninformative) assignment instead of crashing.
+    """
+    try:
+        parsed = json.loads(raw_json or 'null')
+    except json.JSONDecodeError:
+        return list(fallback_topics)
+    if isinstance(parsed, list) and sorted(parsed) == sorted(fallback_topics):
+        return parsed
+    return list(fallback_topics)
+
+
+def format_topic_ranking(raw_json):
+    """Render a participant's JSON topic ranking as a readable export string.
+
+    Returns '' for missing/invalid input.
+    """
+    try:
+        ranking = json.loads(raw_json or 'null')
+    except json.JSONDecodeError:
+        return ''
+    if not isinstance(ranking, list):
+        return ''
+    return ', '.join(ranking)
+
+
 def parse_json_field(raw_json):
     """Parse a JSON list field into a dict keyed by doc_id.
 
