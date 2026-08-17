@@ -14,3 +14,38 @@
 .full-height {
     max-height: 100vh;
 }
+
+.ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0;
+}
+.ranking-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+.ranking-label {
+    font-weight: 600;
+    text-transform: capitalize;
+}
+.ranking-controls {
+    display: flex;
+    gap: 6px;
+}
+.rank-btn {
+    background: #fe2c55;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.rank-btn:active { opacity: 0.85; }

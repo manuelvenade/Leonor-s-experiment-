@@ -301,8 +301,13 @@ class A_Intro(Page):
     @staticmethod
     def before_next_page(player, timeout_happened):
         # update sequence
+        # NOTE: when rank_topics is on, feed_condition isn't assigned yet at
+        # this point (it's deferred to B_TopicRanking.before_next_page), so
+        # field_maybe_none() is required here -- otherwise oTree raises on
+        # accessing a still-None field. The resulting empty-string sequence
+        # is harmless; B_TopicRanking.before_next_page overwrites it.
         df = player.participant.videos
-        posts = df[df['condition'] == player.feed_condition]
+        posts = df[df['condition'] == player.field_maybe_none('feed_condition')]
         player.sequence = ', '.join(map(str, posts['doc_id'].tolist()))
 
 class B_TopicRanking(Page):

@@ -1,0 +1,45 @@
+{{ block scripts }}
+<script src="{{ static 'js/topic_ranking.js' }}"></script>
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{{ static 'css/styles.css' }}">
+<link rel="shortcut icon" type="image/x-icon" href="{{ static 'img/favicon.ico' }}">
+{{ endblock }}
+
+{{ block content }}
+<body class="bg-light.bg-gradient">
+
+    <div class="container">
+        <div class="row justify-content-center mt-5">
+            <div class="col-sm-10 col-md-10 col-lg-8">
+                <div class="card rounded mt-3 shadow-lg">
+                    <div class="card-body p-5">
+                        <p class="fw-semibold mb-2">Rank these topics</p>
+                        <p class="text-muted">Use the arrows to put them in order from your most to least favorite. We'll show you videos from one of them, based on your ranking.</p>
+
+                        <ol id="ranking-list" class="ranking-list">
+                            {{ for topic in topics }}
+                            <li class="ranking-item" data-topic="{{ topic }}">
+                                <span class="ranking-label">{{ topic }}</span>
+                                <div class="ranking-controls">
+                                    <button type="button" class="rank-btn rank-up" aria-label="Move {{ topic }} up">&#9650;</button>
+                                    <button type="button" class="rank-btn rank-down" aria-label="Move {{ topic }} down">&#9660;</button>
+                                </div>
+                            </li>
+                            {{ endfor }}
+                        </ol>
+
+                        <input type="hidden" name="topic_ranking" id="topic_ranking" value="">
+
+                        <div class="d-flex justify-content-center mt-4 mb-3">
+                            <button class="btn btn-success shadow" type="submit" id="submitButton">
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{{ endblock }}
