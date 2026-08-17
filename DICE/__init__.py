@@ -78,11 +78,15 @@ def creating_session(subsession):
     if condition_present:
         topics = list(processed_posts[condition].unique())
         subsession.feed_conditions = ', '.join(topics)
-        if rank_topics:
+        if rank_topics and nav_conditions:
             # Topic itself is chosen later, from each participant's own
             # ranking survey (see B_TopicRanking.before_next_page) — only
             # preference_alignment and nav_condition are balanced up front.
             assignment_cycle = itertools.cycle(assign_cycle_pairs(['most', 'least'], nav_conditions))
+        elif rank_topics:
+            # rank_topics without nav_conditions: balance preference_alignment
+            # alone, mirroring the topic-only fallback below.
+            assignment_cycle = itertools.cycle((alignment, None) for alignment in ['most', 'least'])
         elif nav_conditions:
             # Balanced shuffled round-robin across every (topic, nav_condition) cell
             assignment_cycle = itertools.cycle(assign_cycle_pairs(topics, nav_conditions))
