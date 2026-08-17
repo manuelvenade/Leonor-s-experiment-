@@ -9,6 +9,8 @@ import itertools
 import json
 import random
 
+import numpy as np
+
 
 def assign_cycle_pairs(topics, nav_conditions, rng=None):
     """Build a shuffled list of every (topic, nav_condition) pair.
@@ -21,6 +23,42 @@ def assign_cycle_pairs(topics, nav_conditions, rng=None):
     pairs = list(itertools.product(topics, nav_conditions))
     rng.shuffle(pairs)
     return pairs
+
+
+def finalize_player_sequence(posts):
+    """Fill missing `sequence` values with a random permutation of the
+    unused ranks, then sort by sequence. Mutates and returns `posts`.
+
+    Shared by the immediate-assignment path (creating_session, when topic
+    is researcher-assigned) and the deferred path (after the topic-ranking
+    survey, when topic depends on the participant's own ranking).
+    """
+    if 'commented_post' not in posts.columns:
+        posts['commented_post'] = 0
+
+    # If there's a commented_post, force it to sequence 1, and reassign conflicts
+    commented_mask = posts['commented_post'] == 1
+    if commented_mask.any():
+        posts.loc[commented_mask, 'sequence'] = 1
+        # Any other posts that already have sequence 1 need to be reassigned
+        conflict_mask = (posts['sequence'] == 1) & ~commented_mask
+        if conflict_mask.any():
+            ranks = np.arange(1, len(posts) + 1)
+            used_ranks = posts.loc[~conflict_mask, 'sequence'].dropna()
+            available_ranks = ranks[~np.isin(ranks, used_ranks)]
+            np.random.shuffle(available_ranks)
+            posts.loc[conflict_mask, 'sequence'] = available_ranks[:sum(conflict_mask)]
+
+    # Fill NaN sequences with available ranks
+    ranks = np.arange(1, len(posts) + 1)
+    available_ranks = ranks[~np.isin(ranks, posts['sequence'].dropna())]
+    np.random.shuffle(available_ranks)
+    missing_indices = posts['sequence'].isnull()
+    posts.loc[missing_indices, 'sequence'] = available_ranks[:sum(missing_indices)]
+
+    posts.sort_values(by='sequence', inplace=True)
+    posts.reset_index(drop=True, inplace=True)
+    return posts
 
 
 def parse_json_field(raw_json):
