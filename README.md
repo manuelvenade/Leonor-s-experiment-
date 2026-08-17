@@ -1,15 +1,15 @@
 # Leonor's Experiment — Friction Scroll Study
 
-A TikTok-style feed experiment testing how a "friction scroll" navigation mechanic (a forced pause with a countdown between videos) affects engagement, built with [oTree](https://otree.readthedocs.io/en/latest/) on top of the [DICE](https://github.com/Howquez/DICE) platform.
+A TikTok-style feed experiment testing how a "friction scroll" navigation mechanic (an extra interstitial tap between videos) affects engagement, built with [oTree](https://otree.readthedocs.io/en/latest/) on top of the [DICE](https://github.com/Howquez/DICE) platform.
 
 ## Study design
 
 3×2 between-subjects design:
 
 - **Video topic**: SPORT, FOOD, or TRAVEL
-- **Navigation condition**: normal free scroll, or friction scroll (a black screen with a 3-second countdown appears after every video; the participant must wait for it and click Continue before the next video appears)
+- **Navigation condition**: normal free scroll, or friction scroll (a black screen appears after every video; the participant must click Continue before the next video appears)
 
-Every participant sees 6 videos in a fixed order: 4 regular videos, then a sponsored ad post, then 1 more regular video. Engagement stats (likes/comments/shares) are matched by position across the three topics, so the topic itself can't confound the navigation-condition comparison.
+Every participant sees 6 videos in a fixed order: 5 regular videos, then a sponsored ad post as the final item. Engagement stats (likes/comments/shares) are matched by position across the three topics, so the topic itself can't confound the navigation-condition comparison.
 
 Participants are assigned to one of the 6 (topic × navigation) cells automatically, balanced so every 6 participants covers all 6 cells exactly once.
 
@@ -101,7 +101,7 @@ For each participant × video, the export (`Data` tab in oTree's admin, or `/exp
 | `liked` | Whether the participant liked the video |
 | `has_comment` / `comment` | Whether they commented, and the text |
 | `friction_delay_seconds` | Total time on the black gate before this video (friction condition only) |
-| `voluntary_hesitation_seconds` | Of that delay, how much was *beyond* the mandatory 3-second countdown |
+| `voluntary_hesitation_seconds` | Same as `friction_delay_seconds` — there's no mandatory wait, so all of it is voluntary |
 | `ad_clicked` | Whether they clicked the ad's "Learn more" button |
 | `completed_feed` | Whether they watched through to the end, or left early |
 | `last_position_viewed` | The last video position they reached |
@@ -113,7 +113,7 @@ Device info (device type, screen resolution, touch capability) is also recorded 
 
 - **Researcher info and consent text** — `DICE/T_Consent.html` and `settings.py` (`full_name`, `eMail`, `study_name`)
 - **Briefing instructions** (shown before the feed starts) — `DICE/B_Briefing.html`
-- **Friction countdown length** — `FRICTION_COUNTDOWN_SECONDS` near the top of `DICE/static/js/video_feed.js` (currently 3 seconds)
+- **Friction gate** — the black interstitial has no enforced wait; the Continue button is clickable as soon as it appears (`DICE/static/js/video_feed.js`, `DICE/C_Feed.html`)
 - **Ad content** — the three rows in the CSV where `is_ad=1` (one per topic, identical to each other by design)
 
 ## Citation
