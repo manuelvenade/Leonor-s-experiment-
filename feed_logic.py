@@ -29,6 +29,11 @@ def finalize_player_sequence(posts):
     """Fill missing `sequence` values with a random permutation of the
     unused ranks, then sort by sequence. Mutates and returns `posts`.
 
+    If a `commented_post` column is present, rows with `commented_post == 1`
+    are forced to `sequence == 1`; if another row already held that value,
+    it's reassigned to a random remaining rank so every position `1..N` is
+    still used exactly once.
+
     Shared by the immediate-assignment path (creating_session, when topic
     is researcher-assigned) and the deferred path (after the topic-ranking
     survey, when topic depends on the participant's own ranking).
