@@ -6,7 +6,10 @@ import random
 import itertools
 import urllib.parse
 
-from feed_logic import assign_cycle_pairs, parse_json_field, build_export_row, compute_session_aggregates
+from feed_logic import (
+    assign_cycle_pairs, parse_json_field, build_export_row, compute_session_aggregates,
+    finalize_player_sequence, select_ranked_topic, parse_topic_ranking, format_topic_ranking,
+)
 
 
 doc = """
@@ -69,12 +72,18 @@ def creating_session(subsession):
     # Check if the file contains any conditions and assign groups to it
     condition = subsession.session.config['condition_col']
     nav_conditions = subsession.session.config.get('nav_conditions')
+    rank_topics = subsession.session.config.get('rank_topics', False)
     condition_present = condition in processed_posts.columns
 
     if condition_present:
         topics = list(processed_posts[condition].unique())
         subsession.feed_conditions = ', '.join(topics)
-        if nav_conditions:
+        if rank_topics:
+            # Topic itself is chosen later, from each participant's own
+            # ranking survey (see B_TopicRanking.before_next_page) — only
+            # preference_alignment and nav_condition are balanced up front.
+            assignment_cycle = itertools.cycle(assign_cycle_pairs(['most', 'least'], nav_conditions))
+        elif nav_conditions:
             # Balanced shuffled round-robin across every (topic, nav_condition) cell
             assignment_cycle = itertools.cycle(assign_cycle_pairs(topics, nav_conditions))
         else:
@@ -86,31 +95,19 @@ def creating_session(subsession):
         # Deep copy the DataFrame to ensure each player gets a unique shuffled version
         posts = processed_posts.copy()
 
+        if condition_present and rank_topics:
+            # Topic (and therefore the filtered/sequenced post list) can't be
+            # determined until the participant submits their ranking survey.
+            player.preference_alignment, player.nav_condition = next(assignment_cycle)
+            player.participant.videos = posts
+            continue
+
         # Assign a condition to the player if conditions are present
         if condition_present:
             player.feed_condition, player.nav_condition = next(assignment_cycle)
             posts = posts[posts[condition] == player.feed_condition]
 
-        # Handle commented_post column
-        if 'commented_post' in posts.columns:
-            posts.loc[posts['commented_post'] == 1, 'sequence'] = 1
-        else:
-            posts['commented_post'] = 0
-
-        # Generate ranks and exclude used ranks
-        ranks = np.arange(1, len(posts) + 1)
-        available_ranks = ranks[~np.isin(ranks, posts['sequence'].dropna())]
-
-        # Randomly sample available ranks to fill missing sequence values
-        np.random.shuffle(available_ranks)
-        missing_indices = posts['sequence'].isnull()
-        posts.loc[missing_indices, 'sequence'] = available_ranks[:sum(missing_indices)]
-
-        # Sort DataFrame by sequence
-        posts.sort_values(by='sequence', inplace=True)
-        # Reset index after sorting to ensure clean sequential indices
-        posts.reset_index(drop=True, inplace=True)
-
+        posts = finalize_player_sequence(posts)
         player.participant.videos = posts
 
         # Record the sequence for each player
