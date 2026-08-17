@@ -446,7 +446,7 @@ def custom_export(players):
             feed_condition=p.feed_condition,
             nav_condition=p.field_maybe_none('nav_condition'),
             preference_alignment=p.field_maybe_none('preference_alignment'),
-            topic_ranking=format_topic_ranking(p.topic_ranking),
+            topic_ranking=format_topic_ranking(p.field_maybe_none('topic_ranking')),
             completed_feed=p.field_maybe_none('completed_feed'),
             last_position_viewed=p.field_maybe_none('last_position_viewed'),
             total_watch_time_seconds=aggregates['total_watch_time_seconds'],
