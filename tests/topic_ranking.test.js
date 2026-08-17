@@ -22,4 +22,12 @@ moveRankItem(original, 0, 1);
 assert.deepStrictEqual(original, ['SPORT', 'FOOD', 'TRAVEL']);
 console.log('PASS: moveRankItem does not mutate its input');
 
+// Out-of-range index (e.g. an unmatched indexOf returning -1) must not
+// corrupt the array -- both the index and newIndex bounds are checked.
+assert.deepStrictEqual(moveRankItem(['SPORT', 'FOOD', 'TRAVEL'], -1, 1), ['SPORT', 'FOOD', 'TRAVEL']);
+console.log('PASS: moveRankItem is a no-op for a negative index');
+
+assert.deepStrictEqual(moveRankItem(['SPORT', 'FOOD', 'TRAVEL'], 3, -1), ['SPORT', 'FOOD', 'TRAVEL']);
+console.log('PASS: moveRankItem is a no-op for an index past the end');
+
 console.log('All topic_ranking.test.js tests passed.');

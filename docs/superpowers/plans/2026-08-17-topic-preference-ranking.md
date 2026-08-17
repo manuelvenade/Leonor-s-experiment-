@@ -778,6 +778,14 @@ moveRankItem(original, 0, 1);
 assert.deepStrictEqual(original, ['SPORT', 'FOOD', 'TRAVEL']);
 console.log('PASS: moveRankItem does not mutate its input');
 
+// Out-of-range index (e.g. an unmatched indexOf returning -1) must not
+// corrupt the array -- both the index and newIndex bounds are checked.
+assert.deepStrictEqual(moveRankItem(['SPORT', 'FOOD', 'TRAVEL'], -1, 1), ['SPORT', 'FOOD', 'TRAVEL']);
+console.log('PASS: moveRankItem is a no-op for a negative index');
+
+assert.deepStrictEqual(moveRankItem(['SPORT', 'FOOD', 'TRAVEL'], 3, -1), ['SPORT', 'FOOD', 'TRAVEL']);
+console.log('PASS: moveRankItem is a no-op for an index past the end');
+
 console.log('All topic_ranking.test.js tests passed.');
 ```
 
@@ -796,7 +804,9 @@ Create `DICE/static/js/topic_ranking.js`:
 
 function moveRankItem(order, index, direction) {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= order.length) return order.slice();
+    if (index < 0 || index >= order.length || newIndex < 0 || newIndex >= order.length) {
+        return order.slice();
+    }
     const result = order.slice();
     const tmp = result[index];
     result[index] = result[newIndex];
@@ -809,10 +819,17 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 ```
 
+(Fixed during Task 7's code-quality review: the original literal code above only checked `newIndex`'s
+bounds, not `index`'s -- an out-of-range `index` with an in-range `newIndex` silently corrupted the
+array instead of no-op'ing, e.g. `moveRankItem(arr, -1, 1)` wrote to a negative index and
+`moveRankItem(arr, arr.length, -1)` extended the array. Not reachable by Task 8's planned DOM caller
+(index always comes from `indexOf` on the same list being reordered), but cheap to close and matches
+this file's own convention of covering "shouldn't happen in normal operation" defensive cases.)
+
 - [ ] **Step 4: Run it to verify it passes**
 
 Run: `node tests/topic_ranking.test.js`
-Expected: PASS (5 PASS lines + "All topic_ranking.test.js tests passed.")
+Expected: PASS (7 PASS lines + "All topic_ranking.test.js tests passed.")
 
 - [ ] **Step 5: Commit**
 

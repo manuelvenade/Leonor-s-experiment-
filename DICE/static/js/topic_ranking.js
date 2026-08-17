@@ -3,7 +3,9 @@
 
 function moveRankItem(order, index, direction) {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= order.length) return order.slice();
+    if (index < 0 || index >= order.length || newIndex < 0 || newIndex >= order.length) {
+        return order.slice();
+    }
     const result = order.slice();
     const tmp = result[index];
     result[index] = result[newIndex];
