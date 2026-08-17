@@ -4,14 +4,14 @@ A TikTok-style feed experiment testing how a "friction scroll" navigation mechan
 
 ## Study design
 
-3×2 between-subjects design:
+2×2 between-subjects design:
 
-- **Video topic**: SPORT, FOOD, or TRAVEL
+- **Preference alignment**: participants rank SPORT/FOOD/TRAVEL from most to least favorite before the feed starts, then see either their most- or least-preferred topic (never the middle one)
 - **Navigation condition**: normal free scroll, or friction scroll (a black screen appears after every video; the participant must click Continue before the next video appears)
 
 Every participant sees 6 videos in a fixed order: 5 regular videos, then a sponsored ad post as the final item. Engagement stats (likes/comments/shares) are matched by position across the three topics, so the topic itself can't confound the navigation-condition comparison.
 
-Participants are assigned to one of the 6 (topic × navigation) cells automatically, balanced so every 6 participants covers all 6 cells exactly once.
+Participants are assigned to one of the 4 (preference-alignment × navigation) cells automatically, balanced so every 4 participants covers all 4 cells exactly once. Topic itself is *not* separately balanced — it follows whatever each participant's own ranking puts in their assigned "most" or "least" slot.
 
 ## Running it
 
@@ -94,6 +94,8 @@ For each participant × video, the export (`Data` tab in oTree's admin, or `/exp
 |-------|-------------|
 | `condition` | Video topic: SPORT, FOOD, or TRAVEL |
 | `nav_condition` | Navigation condition: normal or friction |
+| `preference_alignment` | Whether this participant was shown their most- or least-preferred topic |
+| `topic_ranking` | The participant's full topic ranking, most to least preferred (e.g. "FOOD, SPORT, TRAVEL") |
 | `sequence_position` | Position of this video in the feed (1–6) |
 | `watch_time_seconds` | Seconds the video was actually playing |
 | `video_length_seconds` | The clip's actual length |

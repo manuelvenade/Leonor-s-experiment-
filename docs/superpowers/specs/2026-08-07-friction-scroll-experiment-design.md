@@ -77,7 +77,12 @@ nav_condition = models.StringField(doc='normal or friction scroll condition')
 ```
 
 Topic assignment continues to use the existing `feed_condition` player field
-and `condition` CSV column — no change to that mechanism.
+and `condition` CSV column, but **as of
+`2026-08-17-topic-preference-ranking-design.md`, topic is no longer
+independently balanced** — it's derived from each participant's own
+pre-feed topic-preference ranking. See that spec for the updated 2×2
+design (preference_alignment × nav_condition) and the assignment
+mechanism change.
 
 ## CSV schema changes
 
