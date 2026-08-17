@@ -5,6 +5,7 @@ import re
 import random
 import itertools
 import urllib.parse
+import json
 
 from feed_logic import (
     assign_cycle_pairs, parse_json_field, build_export_row, compute_session_aggregates,
@@ -295,6 +296,37 @@ class A_Intro(Page):
         posts = df[df['condition'] == player.feed_condition]
         player.sequence = ', '.join(map(str, posts['doc_id'].tolist()))
 
+class B_TopicRanking(Page):
+    form_model = 'player'
+
+    @staticmethod
+    def is_displayed(player):
+        return bool(player.session.config.get('rank_topics'))
+
+    @staticmethod
+    def get_form_fields(player):
+        return ['topic_ranking']
+
+    @staticmethod
+    def vars_for_template(player):
+        topics = [t.strip() for t in player.subsession.feed_conditions.split(',')]
+        random.shuffle(topics)
+        return dict(topics=topics)
+
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        topics = [t.strip() for t in player.subsession.feed_conditions.split(',')]
+        ranking = parse_topic_ranking(player.topic_ranking, topics)
+        player.topic_ranking = json.dumps(ranking)
+        player.feed_condition = select_ranked_topic(ranking, player.preference_alignment)
+
+        condition_col = player.session.config['condition_col']
+        posts = player.participant.videos
+        posts = posts[posts[condition_col] == player.feed_condition].copy()
+        posts = finalize_player_sequence(posts)
+        player.participant.videos = posts
+        player.sequence = ', '.join(map(str, posts['doc_id'].tolist()))
+
 class B_Briefing(Page):
     form_model = 'player'
 
@@ -361,6 +393,7 @@ class D_Debrief(Page):
         return len(player.session.config['survey_link']) == 0
 
 page_sequence = [A_Intro,
+                 B_TopicRanking,
                  B_Briefing,
                  C_Feed,
                  D_Redirect,
