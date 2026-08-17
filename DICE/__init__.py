@@ -32,6 +32,12 @@ class Group(BaseGroup):
 class Player(BasePlayer):
     feed_condition = models.StringField(doc='indicates the feed condition a player is randomly assigned to')
     nav_condition = models.StringField(doc='indicates the navigation condition (normal or friction) a player is randomly assigned to', blank=True)
+    preference_alignment = models.StringField(
+        doc="'most' or 'least' -- which end of the participant's own topic ranking was actually shown to them.",
+        blank=True)
+    topic_ranking = models.LongStringField(
+        doc='JSON list of topics ranked most-to-least preferred by the participant.',
+        blank=True)
     sequence = models.StringField(doc='prints the sequence of posts based on doc_id')
 
     scroll_sequence = models.LongStringField(doc='tracks the sequence of feed items a participant scrolled through.')
