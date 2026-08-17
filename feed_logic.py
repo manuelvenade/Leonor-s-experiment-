@@ -70,8 +70,13 @@ def select_ranked_topic(ranking, alignment):
     """Pick the topic to show from a participant's full preference ranking.
 
     `ranking` is a list ordered most-preferred first. `alignment` is
-    'most' or 'least' — which end of the ranking gets shown.
+    'most' or 'least' — which end of the ranking gets shown. Any other
+    value raises rather than silently falling through to 'least', since a
+    stray/unset alignment here would otherwise corrupt the balanced 2x2
+    design without any visible error.
     """
+    if alignment not in ('most', 'least'):
+        raise ValueError(f"Unexpected preference_alignment: {alignment!r}")
     return ranking[0] if alignment == 'most' else ranking[-1]
 
 

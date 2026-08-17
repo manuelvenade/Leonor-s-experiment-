@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from feed_logic import finalize_player_sequence, select_ranked_topic, parse_topic_ranking, format_topic_ranking
 
@@ -58,6 +59,11 @@ def test_select_ranked_topic_returns_first_item_when_alignment_is_most():
 
 def test_select_ranked_topic_returns_last_item_when_alignment_is_least():
     assert select_ranked_topic(['FOOD', 'SPORT', 'TRAVEL'], 'least') == 'TRAVEL'
+
+
+def test_select_ranked_topic_raises_on_unexpected_alignment():
+    with pytest.raises(ValueError):
+        select_ranked_topic(['FOOD', 'SPORT', 'TRAVEL'], None)
 
 
 def test_parse_topic_ranking_returns_parsed_list_when_valid_permutation():

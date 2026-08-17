@@ -76,6 +76,15 @@ def creating_session(subsession):
     rank_topics = subsession.session.config.get('rank_topics', False)
     condition_present = condition in processed_posts.columns
 
+    if rank_topics and not condition_present:
+        # B_TopicRanking depends on subsession.feed_conditions being set,
+        # which only happens when condition_present -- fail loudly here
+        # instead of every participant hitting AttributeError on their
+        # first page load.
+        raise ValueError(
+            f"rank_topics=True requires a '{condition}' column in the feed data, but none was found."
+        )
+
     if condition_present:
         topics = list(processed_posts[condition].unique())
         subsession.feed_conditions = ', '.join(topics)
