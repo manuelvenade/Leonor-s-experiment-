@@ -130,8 +130,8 @@ def build_export_row(participant, doc_id, position, viewport, likes, replies, fr
     `participant` is a dict of participant-level values that stay constant
     across every row for a given participant: session_code, participant_code,
     participant_label, id_in_group, feed_condition, nav_condition,
-    completed_feed, last_position_viewed, total_watch_time_seconds,
-    session_duration_seconds, completion_rate.
+    preference_alignment, topic_ranking, completed_feed, last_position_viewed,
+    total_watch_time_seconds, session_duration_seconds, completion_rate.
     """
     viewport_entry = viewport.get(doc_id, {})
     watch_time = viewport_entry.get('duration', '')
@@ -150,6 +150,8 @@ def build_export_row(participant, doc_id, position, viewport, likes, replies, fr
         participant['id_in_group'],
         participant['feed_condition'],
         participant['nav_condition'],
+        participant['preference_alignment'],
+        participant['topic_ranking'],
         doc_id,
         position,
         watch_time,

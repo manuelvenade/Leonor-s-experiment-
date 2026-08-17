@@ -26,6 +26,8 @@ def make_participant(**overrides):
         id_in_group=1,
         feed_condition='SPORT',
         nav_condition='friction',
+        preference_alignment='most',
+        topic_ranking='SPORT, FOOD, TRAVEL',
         completed_feed=True,
         last_position_viewed=6,
         total_watch_time_seconds=42.0,
@@ -49,7 +51,7 @@ def test_build_export_row_pulls_matching_doc_id_entries():
     )
 
     assert row == [
-        'sess1', 'p1', 'label1', 1, 'SPORT', 'friction', 5, 1,
+        'sess1', 'p1', 'label1', 1, 'SPORT', 'friction', 'most', 'SPORT, FOOD, TRAVEL', 5, 1,
         12.4, 20.0, 62.0,
         True, True, 'nice!',
         2.1, 0.5, True,
@@ -65,7 +67,7 @@ def test_build_export_row_defaults_missing_doc_id_to_blank():
     )
 
     assert row == [
-        'sess1', 'p1', 'label1', 1, 'SPORT', 'normal', 99, 3,
+        'sess1', 'p1', 'label1', 1, 'SPORT', 'normal', 'most', 'SPORT, FOOD, TRAVEL', 99, 3,
         '', '', '',
         '', '', '',
         '', '', '',
@@ -82,9 +84,9 @@ def test_build_export_row_leaves_watch_percentage_blank_without_video_length():
         viewport, {}, {}, {}, {},
     )
 
-    assert row[8] == 12.4   # watch_time_seconds
-    assert row[9] == ''     # video_length_seconds
-    assert row[10] == ''    # watch_percentage
+    assert row[10] == 12.4   # watch_time_seconds
+    assert row[11] == ''     # video_length_seconds
+    assert row[12] == ''     # watch_percentage
 
 
 def test_compute_session_aggregates_sums_watch_time_and_computes_completion_rate():

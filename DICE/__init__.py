@@ -411,7 +411,8 @@ page_sequence = [A_Intro,
 
 def custom_export(players):
     yield ['session', 'participant_code', 'participant_label', 'participant_in_session',
-           'condition', 'nav_condition', 'doc_id', 'sequence_position',
+           'condition', 'nav_condition', 'preference_alignment', 'topic_ranking',
+           'doc_id', 'sequence_position',
            'watch_time_seconds', 'video_length_seconds', 'watch_percentage',
            'liked', 'has_comment', 'comment',
            'friction_delay_seconds', 'voluntary_hesitation_seconds', 'ad_clicked',
@@ -444,6 +445,8 @@ def custom_export(players):
             id_in_group=p.id_in_group,
             feed_condition=p.feed_condition,
             nav_condition=p.field_maybe_none('nav_condition'),
+            preference_alignment=p.field_maybe_none('preference_alignment'),
+            topic_ranking=format_topic_ranking(p.topic_ranking),
             completed_feed=p.field_maybe_none('completed_feed'),
             last_position_viewed=p.field_maybe_none('last_position_viewed'),
             total_watch_time_seconds=aggregates['total_watch_time_seconds'],
