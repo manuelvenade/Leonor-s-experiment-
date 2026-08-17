@@ -439,7 +439,9 @@ git commit -m "feat: defer topic assignment to after the ranking survey when ran
 
 `DICE/__init__.py` currently imports `re`, `random`, `itertools`, `urllib.parse` at the top (lines 4-7). Add `import json` alongside them.
 
-**Note on `A_Intro.before_next_page`:** it currently recomputes `player.sequence` by filtering `player.participant.videos` on `player.feed_condition` (`DICE/__init__.py:284-289`). When `rank_topics` is on, `feed_condition` isn't set yet at that point (it's still `None`), so this produces a harmless empty string that this page's `before_next_page` immediately overwrites afterward. This is expected — don't "fix" it by reordering or guarding it, it's dead-but-harmless work with no observable effect.
+**Note on `A_Intro.before_next_page`:** it currently recomputes `player.sequence` by filtering `player.participant.videos` on `player.feed_condition` (`DICE/__init__.py:284-289`). When `rank_topics` is on, `feed_condition` isn't set yet at that point (it's still `None`).
+
+**Correction (found during Task 8's live verification):** this was NOT harmless as originally assumed — on this oTree version, direct attribute access on a `None`-valued field raises `TypeError` on a frozen player instance, so every `rank_topics` participant's consent submission actually 500'd here until `player.feed_condition` was changed to `player.field_maybe_none('feed_condition')` in that one line (same fix pattern as `topic_ranking` in Task 6). If you're implementing this plan fresh, make that change as part of Task 5 rather than discovering it live in Task 8 — it doesn't change the resulting value (still an empty-string `player.sequence`, still overwritten immediately after by `B_TopicRanking.before_next_page`), it just avoids the crash.
 
 - [ ] **Step 2: Add the page class**
 

@@ -106,10 +106,19 @@ under plain Node without a browser.
 
 `A_Intro.before_next_page` currently recomputes `player.sequence` by
 filtering `player.participant.videos` on `player.feed_condition`. When
-`rank_topics` is on, `feed_condition` isn't set yet at that point, so this
-produces a harmless empty string that `B_TopicRanking.before_next_page`
-immediately overwrites afterward. Left as-is — not worth touching for a
-transient value nothing reads.
+`rank_topics` is on, `feed_condition` isn't set yet at that point.
+
+**Update (found during Task 8's live verification, not anticipated when this
+spec was written):** on this oTree version, directly accessing a `None`-valued
+field on a frozen player instance raises `TypeError`, not a harmless empty
+comparison as originally assumed here — `player.feed_condition` had to become
+`player.field_maybe_none('feed_condition')` in that one line, or every
+`rank_topics` participant's consent submission 500s. This is the same
+underlying oTree behavior that also required a `field_maybe_none()` fix for
+`topic_ranking` in the export path (Task 6). With that fix, the *value*
+produced (an empty-string `player.sequence`, immediately overwritten by
+`B_TopicRanking.before_next_page`) matches this spec's original intent — only
+the crash needed fixing, not the logic.
 
 ## New Player fields
 
