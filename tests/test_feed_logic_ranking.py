@@ -81,6 +81,13 @@ def test_parse_topic_ranking_falls_back_when_topics_dont_match():
     assert result == ['SPORT', 'FOOD', 'TRAVEL']
 
 
+def test_parse_topic_ranking_falls_back_on_non_string_items():
+    # Well-formed JSON that isn't a list of strings (e.g. a tampered
+    # submission) must fall back rather than crash on sorted()/join().
+    result = parse_topic_ranking('["SPORT", 1, 2]', ['SPORT', 'FOOD', 'TRAVEL'])
+    assert result == ['SPORT', 'FOOD', 'TRAVEL']
+
+
 def test_format_topic_ranking_joins_list_with_commas():
     assert format_topic_ranking('["FOOD", "SPORT", "TRAVEL"]') == 'FOOD, SPORT, TRAVEL'
 
@@ -88,3 +95,7 @@ def test_format_topic_ranking_joins_list_with_commas():
 def test_format_topic_ranking_returns_empty_string_for_missing_input():
     assert format_topic_ranking('') == ''
     assert format_topic_ranking(None) == ''
+
+
+def test_format_topic_ranking_returns_empty_string_for_non_string_items():
+    assert format_topic_ranking('["FOOD", 1, "TRAVEL"]') == ''

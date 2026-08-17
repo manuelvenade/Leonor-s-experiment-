@@ -87,7 +87,9 @@ def parse_topic_ranking(raw_json, fallback_topics):
         parsed = json.loads(raw_json or 'null')
     except json.JSONDecodeError:
         return list(fallback_topics)
-    if isinstance(parsed, list) and sorted(parsed) == sorted(fallback_topics):
+    if (isinstance(parsed, list)
+            and all(isinstance(item, str) for item in parsed)
+            and sorted(parsed) == sorted(fallback_topics)):
         return parsed
     return list(fallback_topics)
 
@@ -101,7 +103,7 @@ def format_topic_ranking(raw_json):
         ranking = json.loads(raw_json or 'null')
     except json.JSONDecodeError:
         return ''
-    if not isinstance(ranking, list):
+    if not isinstance(ranking, list) or not all(isinstance(item, str) for item in ranking):
         return ''
     return ', '.join(ranking)
 

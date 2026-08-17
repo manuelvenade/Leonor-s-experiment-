@@ -173,6 +173,13 @@ def test_parse_topic_ranking_falls_back_when_topics_dont_match():
     assert result == ['SPORT', 'FOOD', 'TRAVEL']
 
 
+def test_parse_topic_ranking_falls_back_on_non_string_items():
+    # Well-formed JSON that isn't a list of strings (e.g. a tampered
+    # submission) must fall back rather than crash on sorted()/join().
+    result = parse_topic_ranking('["SPORT", 1, 2]', ['SPORT', 'FOOD', 'TRAVEL'])
+    assert result == ['SPORT', 'FOOD', 'TRAVEL']
+
+
 def test_format_topic_ranking_joins_list_with_commas():
     assert format_topic_ranking('["FOOD", "SPORT", "TRAVEL"]') == 'FOOD, SPORT, TRAVEL'
 
@@ -180,6 +187,10 @@ def test_format_topic_ranking_joins_list_with_commas():
 def test_format_topic_ranking_returns_empty_string_for_missing_input():
     assert format_topic_ranking('') == ''
     assert format_topic_ranking(None) == ''
+
+
+def test_format_topic_ranking_returns_empty_string_for_non_string_items():
+    assert format_topic_ranking('["FOOD", 1, "TRAVEL"]') == ''
 ```
 
 Append to `tests/test_feed_logic_assignment.py`:
@@ -229,7 +240,9 @@ def parse_topic_ranking(raw_json, fallback_topics):
         parsed = json.loads(raw_json or 'null')
     except json.JSONDecodeError:
         return list(fallback_topics)
-    if isinstance(parsed, list) and sorted(parsed) == sorted(fallback_topics):
+    if (isinstance(parsed, list)
+            and all(isinstance(item, str) for item in parsed)
+            and sorted(parsed) == sorted(fallback_topics)):
         return parsed
     return list(fallback_topics)
 
@@ -243,10 +256,16 @@ def format_topic_ranking(raw_json):
         ranking = json.loads(raw_json or 'null')
     except json.JSONDecodeError:
         return ''
-    if not isinstance(ranking, list):
+    if not isinstance(ranking, list) or not all(isinstance(item, str) for item in ranking):
         return ''
     return ', '.join(ranking)
 ```
+
+(Fixed during Task 2's code-quality review: the original literal code above crashed with
+`TypeError` on well-formed JSON that isn't a list of strings — e.g. `'["SPORT", 1, 2]'` — because
+`sorted()`/`', '.join()` only fail safely on `JSONDecodeError`, not on wrong-shaped-but-valid JSON.
+Since `topic_ranking` is a normal POST field a participant could tamper with via devtools, this is
+reachable from a live request in Task 5, not just a theoretical gap.)
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
