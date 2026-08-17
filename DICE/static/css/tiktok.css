@@ -314,11 +314,6 @@ body { margin: 0; padding: 0; background: #000; overflow: hidden; }
     align-items: center;
     gap: 20px;
 }
-#friction-countdown {
-    font-size: 48px;
-    font-weight: 700;
-    color: #fff;
-}
 #frictionContinueBtn {
     background: #fe2c55;
     border: none;
@@ -330,11 +325,6 @@ body { margin: 0; padding: 0; background: #000; overflow: hidden; }
     cursor: pointer;
 }
 #frictionContinueBtn:active { opacity: 0.85; }
-#frictionContinueBtn:disabled {
-    background: #4a4a4a;
-    color: rgba(255,255,255,0.5);
-    cursor: not-allowed;
-}
 
 /* ---- Comment drawer ---- */
 #comment-drawer {
