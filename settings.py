@@ -9,9 +9,10 @@ SESSION_CONFIGS = [
     dict(
         name='FrictionScrollStudy',
         app_sequence=['DICE'],
-        num_demo_participants=6,
+        num_demo_participants=4,  # 4 cells: preference_alignment (most/least) x nav_condition (normal/friction)
         data_path='DICE/static/data/friction_scroll_videos.csv',
         nav_conditions=['normal', 'friction'],
+        rank_topics=True,
     ),
 ]
 

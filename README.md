@@ -1,17 +1,17 @@
 # Leonor's Experiment — Friction Scroll Study
 
-A TikTok-style feed experiment testing how a "friction scroll" navigation mechanic (a forced pause with a countdown between videos) affects engagement, built with [oTree](https://otree.readthedocs.io/en/latest/) on top of the [DICE](https://github.com/Howquez/DICE) platform.
+A TikTok-style feed experiment testing how a "friction scroll" navigation mechanic (an extra interstitial tap between videos) affects engagement, built with [oTree](https://otree.readthedocs.io/en/latest/) on top of the [DICE](https://github.com/Howquez/DICE) platform.
 
 ## Study design
 
-3×2 between-subjects design:
+2×2 between-subjects design:
 
-- **Video topic**: SPORT, FOOD, or TRAVEL
-- **Navigation condition**: normal free scroll, or friction scroll (a black screen with a 3-second countdown appears after every video; the participant must wait for it and click Continue before the next video appears)
+- **Preference alignment**: participants rank SPORT/FOOD/TRAVEL from most to least favorite before the feed starts, then see either their most- or least-preferred topic (never the middle one)
+- **Navigation condition**: normal free scroll, or friction scroll (a black screen appears after every video; the participant must click Continue before the next video appears)
 
-Every participant sees 6 videos in a fixed order: 4 regular videos, then a sponsored ad post, then 1 more regular video. Engagement stats (likes/comments/shares) are matched by position across the three topics, so the topic itself can't confound the navigation-condition comparison.
+Every participant sees 6 videos in a fixed order: 5 regular videos, then a sponsored ad post as the final item. Engagement stats (likes/comments/shares) are matched by position across the three topics, so the topic itself can't confound the navigation-condition comparison.
 
-Participants are assigned to one of the 6 (topic × navigation) cells automatically, balanced so every 6 participants covers all 6 cells exactly once.
+Participants are assigned to one of the 4 (preference-alignment × navigation) cells automatically, balanced so every 4 participants covers all 4 cells exactly once. Topic itself is *not* separately balanced — it follows whatever each participant's own ranking puts in their assigned "most" or "least" slot. This means `preference_alignment` is partially confounded with topic content (e.g. if most people rank FOOD #1, a most-vs-least comparison is partly a FOOD-vs-other-topics comparison) — the export includes each participant's full ranking so this can be accounted for in analysis, but it's worth planning for.
 
 ## Running it
 
@@ -22,7 +22,7 @@ pip install -r requirements.txt
 otree devserver
 ```
 
-Open `http://localhost:8000/demo/FrictionScrollStudy` — this creates a demo session with 6 participants and gives you a play link for each one.
+Open `http://localhost:8000/demo/FrictionScrollStudy` — this creates a demo session with 4 participants (one per preference-alignment × navigation cell) and gives you a play link for each one.
 
 ## Deploying online (oTreeHub)
 
@@ -94,6 +94,9 @@ For each participant × video, the export (`Data` tab in oTree's admin, or `/exp
 |-------|-------------|
 | `condition` | Video topic: SPORT, FOOD, or TRAVEL |
 | `nav_condition` | Navigation condition: normal or friction |
+| `preference_alignment` | Whether this participant was shown their most- or least-preferred topic |
+| `topic_ranking` | The participant's final submitted topic ranking, most to least preferred (e.g. "FOOD, SPORT, TRAVEL") |
+| `topic_ranking_initial` | The order shown before any reordering. Compare to `topic_ranking`: identical = never touched the controls; different = genuinely reordered; blank = the ranking page's JS never ran (treat `topic_ranking` with caution for that row) |
 | `sequence_position` | Position of this video in the feed (1–6) |
 | `watch_time_seconds` | Seconds the video was actually playing |
 | `video_length_seconds` | The clip's actual length |
@@ -101,7 +104,7 @@ For each participant × video, the export (`Data` tab in oTree's admin, or `/exp
 | `liked` | Whether the participant liked the video |
 | `has_comment` / `comment` | Whether they commented, and the text |
 | `friction_delay_seconds` | Total time on the black gate before this video (friction condition only) |
-| `voluntary_hesitation_seconds` | Of that delay, how much was *beyond* the mandatory 3-second countdown |
+| `voluntary_hesitation_seconds` | Same as `friction_delay_seconds` — there's no mandatory wait, so all of it is voluntary |
 | `ad_clicked` | Whether they clicked the ad's "Learn more" button |
 | `completed_feed` | Whether they watched through to the end, or left early |
 | `last_position_viewed` | The last video position they reached |
@@ -109,11 +112,14 @@ For each participant × video, the export (`Data` tab in oTree's admin, or `/exp
 
 Device info (device type, screen resolution, touch capability) is also recorded per participant.
 
+A participant who never reaches the feed (e.g. abandons on the ranking survey) doesn't appear in the export at all — this changed slightly from earlier versions of the study, so exported row counts won't necessarily match total Prolific/participant submissions.
+
 ## Customizing further
 
 - **Researcher info and consent text** — `DICE/T_Consent.html` and `settings.py` (`full_name`, `eMail`, `study_name`)
+- **Topic ranking survey** (shown right after consent, for `FrictionScrollStudy`) — wording in `DICE/B_TopicRanking.html`; toggled on/off entirely via the `rank_topics` flag in that session's config in `settings.py`
 - **Briefing instructions** (shown before the feed starts) — `DICE/B_Briefing.html`
-- **Friction countdown length** — `FRICTION_COUNTDOWN_SECONDS` near the top of `DICE/static/js/video_feed.js` (currently 3 seconds)
+- **Friction gate** — the black interstitial has no enforced wait; the Continue button is clickable as soon as it appears (`DICE/static/js/video_feed.js`, `DICE/C_Feed.html`)
 - **Ad content** — the three rows in the CSV where `is_ad=1` (one per topic, identical to each other by design)
 
 ## Citation

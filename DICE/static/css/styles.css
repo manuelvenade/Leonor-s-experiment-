@@ -14,3 +14,73 @@
 .full-height {
     max-height: 100vh;
 }
+
+.ranking-endpoint-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+    text-align: center;
+}
+.ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+    counter-reset: ranking-position;
+}
+.ranking-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    counter-increment: ranking-position;
+}
+/* Position number stays correct automatically as items are reordered in
+   the DOM -- no JS needed to keep it in sync. */
+.ranking-item::before {
+    content: counter(ranking-position) ".";
+    font-weight: 700;
+    color: #adb5bd;
+    margin-right: 12px;
+}
+.ranking-label {
+    font-weight: 600;
+    text-transform: capitalize;
+}
+.ranking-controls {
+    display: flex;
+    gap: 6px;
+}
+.rank-btn {
+    background: #fe2c55;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.rank-btn:active { opacity: 0.85; }
+.rank-btn:hover { filter: brightness(1.1); }
+.rank-btn:focus-visible {
+    outline: 3px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Fallback in case Bootstrap's own .visually-hidden isn't loaded on a given
+   page -- keeps aria-live status text out of view but still announced. */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}

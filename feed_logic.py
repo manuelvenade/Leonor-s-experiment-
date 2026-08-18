@@ -9,6 +9,8 @@ import itertools
 import json
 import random
 
+import numpy as np
+
 
 def assign_cycle_pairs(topics, nav_conditions, rng=None):
     """Build a shuffled list of every (topic, nav_condition) pair.
@@ -21,6 +23,94 @@ def assign_cycle_pairs(topics, nav_conditions, rng=None):
     pairs = list(itertools.product(topics, nav_conditions))
     rng.shuffle(pairs)
     return pairs
+
+
+def finalize_player_sequence(posts):
+    """Fill missing `sequence` values with a random permutation of the
+    unused ranks, then sort by sequence. Mutates and returns `posts`.
+
+    If a `commented_post` column is present, rows with `commented_post == 1`
+    are forced to `sequence == 1`; if another row already held that value,
+    it's reassigned to a random remaining rank so every position `1..N` is
+    still used exactly once.
+
+    Shared by the immediate-assignment path (creating_session, when topic
+    is researcher-assigned) and the deferred path (after the topic-ranking
+    survey, when topic depends on the participant's own ranking).
+    """
+    if 'commented_post' not in posts.columns:
+        posts['commented_post'] = 0
+
+    # If there's a commented_post, force it to sequence 1, and reassign conflicts
+    commented_mask = posts['commented_post'] == 1
+    if commented_mask.any():
+        posts.loc[commented_mask, 'sequence'] = 1
+        # Any other posts that already have sequence 1 need to be reassigned
+        conflict_mask = (posts['sequence'] == 1) & ~commented_mask
+        if conflict_mask.any():
+            ranks = np.arange(1, len(posts) + 1)
+            used_ranks = posts.loc[~conflict_mask, 'sequence'].dropna()
+            available_ranks = ranks[~np.isin(ranks, used_ranks)]
+            np.random.shuffle(available_ranks)
+            posts.loc[conflict_mask, 'sequence'] = available_ranks[:sum(conflict_mask)]
+
+    # Fill NaN sequences with available ranks
+    ranks = np.arange(1, len(posts) + 1)
+    available_ranks = ranks[~np.isin(ranks, posts['sequence'].dropna())]
+    np.random.shuffle(available_ranks)
+    missing_indices = posts['sequence'].isnull()
+    posts.loc[missing_indices, 'sequence'] = available_ranks[:sum(missing_indices)]
+
+    posts.sort_values(by='sequence', inplace=True)
+    posts.reset_index(drop=True, inplace=True)
+    return posts
+
+
+def select_ranked_topic(ranking, alignment):
+    """Pick the topic to show from a participant's full preference ranking.
+
+    `ranking` is a list ordered most-preferred first. `alignment` is
+    'most' or 'least' — which end of the ranking gets shown. Any other
+    value raises rather than silently falling through to 'least', since a
+    stray/unset alignment here would otherwise corrupt the balanced 2x2
+    design without any visible error.
+    """
+    if alignment not in ('most', 'least'):
+        raise ValueError(f"Unexpected preference_alignment: {alignment!r}")
+    return ranking[0] if alignment == 'most' else ranking[-1]
+
+
+def parse_topic_ranking(raw_json, fallback_topics):
+    """Parse a participant's submitted topic ranking.
+
+    Returns the parsed list if it's valid JSON containing exactly the same
+    topics as `fallback_topics` (in any order); otherwise returns
+    `fallback_topics` unchanged, so a missing/corrupt/tampered ranking still
+    yields a usable (if uninformative) assignment instead of crashing.
+    """
+    try:
+        parsed = json.loads(raw_json or 'null')
+    except json.JSONDecodeError:
+        return list(fallback_topics)
+    if (isinstance(parsed, list)
+            and all(isinstance(item, str) for item in parsed)
+            and sorted(parsed) == sorted(fallback_topics)):
+        return parsed
+    return list(fallback_topics)
+
+
+def format_topic_ranking(raw_json):
+    """Render a participant's JSON topic ranking as a readable export string.
+
+    Returns '' for missing/invalid input.
+    """
+    try:
+        ranking = json.loads(raw_json or 'null')
+    except json.JSONDecodeError:
+        return ''
+    if not isinstance(ranking, list) or not all(isinstance(item, str) for item in ranking):
+        return ''
+    return ', '.join(ranking)
 
 
 def parse_json_field(raw_json):
@@ -40,8 +130,9 @@ def build_export_row(participant, doc_id, position, viewport, likes, replies, fr
     `participant` is a dict of participant-level values that stay constant
     across every row for a given participant: session_code, participant_code,
     participant_label, id_in_group, feed_condition, nav_condition,
-    completed_feed, last_position_viewed, total_watch_time_seconds,
-    session_duration_seconds, completion_rate.
+    preference_alignment, topic_ranking, topic_ranking_initial, completed_feed,
+    last_position_viewed, total_watch_time_seconds, session_duration_seconds,
+    completion_rate.
     """
     viewport_entry = viewport.get(doc_id, {})
     watch_time = viewport_entry.get('duration', '')
@@ -60,6 +151,9 @@ def build_export_row(participant, doc_id, position, viewport, likes, replies, fr
         participant['id_in_group'],
         participant['feed_condition'],
         participant['nav_condition'],
+        participant['preference_alignment'],
+        participant['topic_ranking'],
+        participant['topic_ranking_initial'],
         doc_id,
         position,
         watch_time,

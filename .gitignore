@@ -21,3 +21,9 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Large topic video source files hosted on GitHub raw instead (see
+# friction_scroll_videos.csv) — kept locally only as a dev-time fallback
+# source, not committed to avoid repo/slug bloat.
+DICE/static/mp4/sport*.mp4
+DICE/static/mp4/travel*.mp4

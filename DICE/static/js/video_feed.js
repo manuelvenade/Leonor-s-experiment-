@@ -9,10 +9,11 @@ let navLockTimer = null;
 
 // Friction-scroll state
 const navCondition = window.NAV_CONDITION || 'normal';
-const FRICTION_COUNTDOWN_SECONDS = 3;
+// No enforced minimum wait — kept at 0 so voluntary_hesitation_seconds
+// (see friction.js) equals the full time spent on the gate.
+const FRICTION_COUNTDOWN_SECONDS = 0;
 let pendingNavigation = null; // { index, items }
 let gateShownAt = null;
-let countdownTimer = null;
 const frictionLog = [];
 const promotedClicks = [];
 
@@ -327,7 +328,6 @@ function navigateTo(index, items) {
         pendingNavigation = { index: index, items: items };
         gateShownAt = Date.now();
         document.getElementById('friction-gate').classList.remove('d-none');
-        startFrictionCountdown();
         return;
     }
 
@@ -341,27 +341,6 @@ function performNavigation(index, items) {
 
     clearTimeout(navLockTimer);
     navLockTimer = setTimeout(function () { isNavigating = false; }, 500);
-}
-
-function startFrictionCountdown() {
-    const countdownEl = document.getElementById('friction-countdown');
-    const continueBtn = document.getElementById('frictionContinueBtn');
-    continueBtn.disabled = true;
-
-    clearInterval(countdownTimer);
-
-    function tick() {
-        const remaining = getCountdownRemaining(gateShownAt, Date.now(), FRICTION_COUNTDOWN_SECONDS);
-        countdownEl.textContent = remaining;
-        if (remaining <= 0) {
-            clearInterval(countdownTimer);
-            countdownTimer = null;
-            continueBtn.disabled = false;
-        }
-    }
-
-    tick();
-    countdownTimer = setInterval(tick, 100);
 }
 
 function openComments(docId) {

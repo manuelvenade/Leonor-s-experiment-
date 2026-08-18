@@ -5,8 +5,12 @@ import re
 import random
 import itertools
 import urllib.parse
+import json
 
-from feed_logic import assign_cycle_pairs, parse_json_field, build_export_row, compute_session_aggregates
+from feed_logic import (
+    assign_cycle_pairs, parse_json_field, build_export_row, compute_session_aggregates,
+    finalize_player_sequence, select_ranked_topic, parse_topic_ranking, format_topic_ranking,
+)
 
 
 doc = """
@@ -32,6 +36,18 @@ class Group(BaseGroup):
 class Player(BasePlayer):
     feed_condition = models.StringField(doc='indicates the feed condition a player is randomly assigned to')
     nav_condition = models.StringField(doc='indicates the navigation condition (normal or friction) a player is randomly assigned to', blank=True)
+    preference_alignment = models.StringField(
+        doc="'most' or 'least' -- which end of the participant's own topic ranking was actually shown to them.",
+        blank=True)
+    topic_ranking = models.LongStringField(
+        doc='JSON list of topics ranked most-to-least preferred by the participant.',
+        blank=True)
+    topic_ranking_initial = models.LongStringField(
+        doc='JSON list of topics in the order first shown to the participant, before any '
+            'reordering -- stored as-submitted (not defaulted) so an empty/unparseable value '
+            'is itself the signal that the reorder JS never ran, distinguishing that case and '
+            'a never-touched default from a genuine ranking.',
+        blank=True)
     sequence = models.StringField(doc='prints the sequence of posts based on doc_id')
 
     scroll_sequence = models.LongStringField(doc='tracks the sequence of feed items a participant scrolled through.')
@@ -63,12 +79,31 @@ def creating_session(subsession):
     # Check if the file contains any conditions and assign groups to it
     condition = subsession.session.config['condition_col']
     nav_conditions = subsession.session.config.get('nav_conditions')
+    rank_topics = subsession.session.config.get('rank_topics', False)
     condition_present = condition in processed_posts.columns
+
+    if rank_topics and not condition_present:
+        # B_TopicRanking depends on subsession.feed_conditions being set,
+        # which only happens when condition_present -- fail loudly here
+        # instead of every participant hitting AttributeError on their
+        # first page load.
+        raise ValueError(
+            f"rank_topics=True requires a '{condition}' column in the feed data, but none was found."
+        )
 
     if condition_present:
         topics = list(processed_posts[condition].unique())
         subsession.feed_conditions = ', '.join(topics)
-        if nav_conditions:
+        if rank_topics and nav_conditions:
+            # Topic itself is chosen later, from each participant's own
+            # ranking survey (see B_TopicRanking.before_next_page) — only
+            # preference_alignment and nav_condition are balanced up front.
+            assignment_cycle = itertools.cycle(assign_cycle_pairs(['most', 'least'], nav_conditions))
+        elif rank_topics:
+            # rank_topics without nav_conditions: balance preference_alignment
+            # alone, mirroring the topic-only fallback below.
+            assignment_cycle = itertools.cycle((alignment, None) for alignment in ['most', 'least'])
+        elif nav_conditions:
             # Balanced shuffled round-robin across every (topic, nav_condition) cell
             assignment_cycle = itertools.cycle(assign_cycle_pairs(topics, nav_conditions))
         else:
@@ -80,31 +115,19 @@ def creating_session(subsession):
         # Deep copy the DataFrame to ensure each player gets a unique shuffled version
         posts = processed_posts.copy()
 
+        if condition_present and rank_topics:
+            # Topic (and therefore the filtered/sequenced post list) can't be
+            # determined until the participant submits their ranking survey.
+            player.preference_alignment, player.nav_condition = next(assignment_cycle)
+            player.participant.videos = posts
+            continue
+
         # Assign a condition to the player if conditions are present
         if condition_present:
             player.feed_condition, player.nav_condition = next(assignment_cycle)
             posts = posts[posts[condition] == player.feed_condition]
 
-        # Handle commented_post column
-        if 'commented_post' in posts.columns:
-            posts.loc[posts['commented_post'] == 1, 'sequence'] = 1
-        else:
-            posts['commented_post'] = 0
-
-        # Generate ranks and exclude used ranks
-        ranks = np.arange(1, len(posts) + 1)
-        available_ranks = ranks[~np.isin(ranks, posts['sequence'].dropna())]
-
-        # Randomly sample available ranks to fill missing sequence values
-        np.random.shuffle(available_ranks)
-        missing_indices = posts['sequence'].isnull()
-        posts.loc[missing_indices, 'sequence'] = available_ranks[:sum(missing_indices)]
-
-        # Sort DataFrame by sequence
-        posts.sort_values(by='sequence', inplace=True)
-        # Reset index after sorting to ensure clean sequential indices
-        posts.reset_index(drop=True, inplace=True)
-
+        posts = finalize_player_sequence(posts)
         player.participant.videos = posts
 
         # Record the sequence for each player
@@ -188,6 +211,7 @@ def prepare_video(df):
         df['video'] = ''
         df['video_is_url'] = False
         df['video_path'] = ''
+        df['video_local_fallback'] = ''
         return df
     df['video'] = df['video'].fillna('').astype(str)
     df['video_is_url'] = df['video'].apply(is_url)
@@ -195,6 +219,12 @@ def prepare_video(df):
     df['video_path'] = df.apply(
         lambda row: row['video'] if row['video_is_url'] else (f"mp4/{row['video']}" if row['video'] else ''),
         axis=1
+    )
+    # Fallback source (same basename under mp4/) so a remote URL that hasn't
+    # been uploaded yet, or is briefly unreachable, can still play from a
+    # local copy dropped into DICE/static/mp4/ under the same filename.
+    df['video_local_fallback'] = df['video'].apply(
+        lambda v: f"mp4/{urllib.parse.urlparse(v).path.rsplit('/', 1)[-1]}" if v else ''
     )
     return df
 
@@ -277,8 +307,48 @@ class A_Intro(Page):
     @staticmethod
     def before_next_page(player, timeout_happened):
         # update sequence
+        # NOTE: when rank_topics is on, feed_condition isn't assigned yet at
+        # this point (it's deferred to B_TopicRanking.before_next_page), so
+        # field_maybe_none() is required here -- otherwise oTree raises on
+        # accessing a still-None field. The resulting empty-string sequence
+        # is harmless; B_TopicRanking.before_next_page overwrites it.
         df = player.participant.videos
-        posts = df[df['condition'] == player.feed_condition]
+        posts = df[df['condition'] == player.field_maybe_none('feed_condition')]
+        player.sequence = ', '.join(map(str, posts['doc_id'].tolist()))
+
+class B_TopicRanking(Page):
+    form_model = 'player'
+
+    @staticmethod
+    def is_displayed(player):
+        return bool(player.session.config.get('rank_topics'))
+
+    @staticmethod
+    def get_form_fields(player):
+        return ['topic_ranking', 'topic_ranking_initial']
+
+    @staticmethod
+    def vars_for_template(player):
+        topics = [t.strip() for t in player.subsession.feed_conditions.split(',')]
+        random.shuffle(topics)
+        # Display-only labels -- `value` stays the raw CSV/condition string
+        # (what data-topic, topic_ranking, and assignment logic all key on).
+        topic_labels = {'SPORT': 'Sports', 'FOOD': 'Food', 'TRAVEL': 'Travel'}
+        topics = [dict(value=t, label=topic_labels.get(t, t.title())) for t in topics]
+        return dict(topics=topics)
+
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        topics = [t.strip() for t in player.subsession.feed_conditions.split(',')]
+        ranking = parse_topic_ranking(player.topic_ranking, topics)
+        player.topic_ranking = json.dumps(ranking)
+        player.feed_condition = select_ranked_topic(ranking, player.preference_alignment)
+
+        condition_col = player.session.config['condition_col']
+        posts = player.participant.videos
+        posts = posts[posts[condition_col] == player.feed_condition].copy()
+        posts = finalize_player_sequence(posts)
+        player.participant.videos = posts
         player.sequence = ', '.join(map(str, posts['doc_id'].tolist()))
 
 class B_Briefing(Page):
@@ -347,6 +417,7 @@ class D_Debrief(Page):
         return len(player.session.config['survey_link']) == 0
 
 page_sequence = [A_Intro,
+                 B_TopicRanking,
                  B_Briefing,
                  C_Feed,
                  D_Redirect,
@@ -355,7 +426,9 @@ page_sequence = [A_Intro,
 
 def custom_export(players):
     yield ['session', 'participant_code', 'participant_label', 'participant_in_session',
-           'condition', 'nav_condition', 'doc_id', 'sequence_position',
+           'condition', 'nav_condition', 'preference_alignment', 'topic_ranking',
+           'topic_ranking_initial',
+           'doc_id', 'sequence_position',
            'watch_time_seconds', 'video_length_seconds', 'watch_percentage',
            'liked', 'has_comment', 'comment',
            'friction_delay_seconds', 'voluntary_hesitation_seconds', 'ad_clicked',
@@ -363,7 +436,7 @@ def custom_export(players):
            'total_watch_time_seconds', 'session_duration_seconds', 'completion_rate']
 
     for p in players:
-        if not p.sequence:
+        if not p.field_maybe_none('sequence'):
             continue
 
         doc_ids = [int(x.strip()) for x in p.sequence.split(',')]
@@ -386,8 +459,11 @@ def custom_export(players):
             participant_code=p.participant.code,
             participant_label=p.participant.label,
             id_in_group=p.id_in_group,
-            feed_condition=p.feed_condition,
+            feed_condition=p.field_maybe_none('feed_condition'),
             nav_condition=p.field_maybe_none('nav_condition'),
+            preference_alignment=p.field_maybe_none('preference_alignment'),
+            topic_ranking=format_topic_ranking(p.field_maybe_none('topic_ranking')),
+            topic_ranking_initial=format_topic_ranking(p.field_maybe_none('topic_ranking_initial')),
             completed_feed=p.field_maybe_none('completed_feed'),
             last_position_viewed=p.field_maybe_none('last_position_viewed'),
             total_watch_time_seconds=aggregates['total_watch_time_seconds'],
