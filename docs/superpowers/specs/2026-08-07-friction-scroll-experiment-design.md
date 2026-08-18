@@ -3,6 +3,16 @@
 Date: 2026-08-07
 Status: Approved, not yet implemented
 
+> **Superseded (2026-08-17):** the "Research design" and "Assignment
+> mechanism" sections below describe the *original* 3×2 design (topic
+> independently balanced). For `FrictionScrollStudy`, this has been replaced
+> by a 2×2 design (`preference_alignment` × `nav_condition`, 4 cells) where
+> topic is derived from each participant's own pre-feed ranking survey
+> instead of being separately randomized. See
+> `2026-08-17-topic-preference-ranking-design.md` for the current design —
+> the sections below are kept as historical record of what was originally
+> built, not current behavior.
+
 ## Background
 
 DICE TikTok (this repo) is an oTree app that simulates a TikTok-style vertical

@@ -22,7 +22,7 @@ pip install -r requirements.txt
 otree devserver
 ```
 
-Open `http://localhost:8000/demo/FrictionScrollStudy` — this creates a demo session with 6 participants and gives you a play link for each one.
+Open `http://localhost:8000/demo/FrictionScrollStudy` — this creates a demo session with 4 participants (one per preference-alignment × navigation cell) and gives you a play link for each one.
 
 ## Deploying online (oTreeHub)
 
