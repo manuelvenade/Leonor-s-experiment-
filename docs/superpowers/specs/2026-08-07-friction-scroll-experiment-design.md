@@ -1,19 +1,23 @@
 # Friction Scroll Experiment — Design Spec
 
 Date: 2026-08-07
-Status: Approved, not yet implemented
+Status: Implemented; superseded in part (see note below)
 
-> **Superseded (2026-08-17):** the "Research design" and "Assignment
-> mechanism" sections below describe the *original* 3×2 design (topic
-> independently balanced). For `FrictionScrollStudy`, this has been replaced
-> by a 2×2 design (`preference_alignment` × `nav_condition`, 4 cells) where
-> topic is derived from each participant's own pre-feed ranking survey
-> instead of being separately randomized. See
+> **Superseded (2026-08-17):** the "Background," "Research design," and
+> "Assignment mechanism" sections below describe the *original* 3×2 design
+> (topic independently balanced). For `FrictionScrollStudy`, this has been
+> replaced by a 2×2 design (`preference_alignment` × `nav_condition`, 4
+> cells) where topic is derived from each participant's own pre-feed
+> ranking survey instead of being separately randomized. See
 > `2026-08-17-topic-preference-ranking-design.md` for the current design —
 > the sections below are kept as historical record of what was originally
-> built, not current behavior.
+> built, not current behavior. Every section below that mentions the old
+> 3×2/6-cell design carries its own inline reminder of this.
 
 ## Background
+
+*(Superseded — see note above. "3×2 factorial study" below describes the
+original design, not current behavior.)*
 
 DICE TikTok (this repo) is an oTree app that simulates a TikTok-style vertical
 video feed for behavioral experiments. It already supports one between-subjects
@@ -22,6 +26,9 @@ in `creating_session()`). This spec adds a second, orthogonal factor — the
 navigation mechanic itself — to run a 3×2 factorial study.
 
 ## Research design
+
+*(Superseded — see note above. This section describes the original 3×2
+design, not current behavior.)*
 
 **Between-subjects, 3×2 factorial, 6 cells.**
 
@@ -60,6 +67,10 @@ end card. Normal-scroll participants never see this screen; navigation
 behaves exactly as it does today (free swipe/arrow-key scrolling).
 
 ## Assignment mechanism
+
+*(Superseded — see note above. Describes the original topic-crossed
+assignment cycle; `FrictionScrollStudy` now uses the `preference_alignment`
+cycle instead, see the 2026-08-17 spec.)*
 
 Extends `creating_session()` in `DICE/__init__.py`.
 
