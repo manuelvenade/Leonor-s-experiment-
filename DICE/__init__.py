@@ -331,6 +331,10 @@ class B_TopicRanking(Page):
     def vars_for_template(player):
         topics = [t.strip() for t in player.subsession.feed_conditions.split(',')]
         random.shuffle(topics)
+        # Display-only labels -- `value` stays the raw CSV/condition string
+        # (what data-topic, topic_ranking, and assignment logic all key on).
+        topic_labels = {'SPORT': 'Sports', 'FOOD': 'Food', 'TRAVEL': 'Travel'}
+        topics = [dict(value=t, label=topic_labels.get(t, t.title())) for t in topics]
         return dict(topics=topics)
 
     @staticmethod
