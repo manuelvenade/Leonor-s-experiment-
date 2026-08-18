@@ -11,7 +11,7 @@ A TikTok-style feed experiment testing how a "friction scroll" navigation mechan
 
 Every participant sees 6 videos in a fixed order: 5 regular videos, then a sponsored ad post as the final item. Engagement stats (likes/comments/shares) are matched by position across the three topics, so the topic itself can't confound the navigation-condition comparison.
 
-Participants are assigned to one of the 4 (preference-alignment × navigation) cells automatically, balanced so every 4 participants covers all 4 cells exactly once. Topic itself is *not* separately balanced — it follows whatever each participant's own ranking puts in their assigned "most" or "least" slot.
+Participants are assigned to one of the 4 (preference-alignment × navigation) cells automatically, balanced so every 4 participants covers all 4 cells exactly once. Topic itself is *not* separately balanced — it follows whatever each participant's own ranking puts in their assigned "most" or "least" slot. This means `preference_alignment` is partially confounded with topic content (e.g. if most people rank FOOD #1, a most-vs-least comparison is partly a FOOD-vs-other-topics comparison) — the export includes each participant's full ranking so this can be accounted for in analysis, but it's worth planning for.
 
 ## Running it
 
@@ -111,9 +111,12 @@ For each participant × video, the export (`Data` tab in oTree's admin, or `/exp
 
 Device info (device type, screen resolution, touch capability) is also recorded per participant.
 
+A participant who never reaches the feed (e.g. abandons on the ranking survey) doesn't appear in the export at all — this changed slightly from earlier versions of the study, so exported row counts won't necessarily match total Prolific/participant submissions.
+
 ## Customizing further
 
 - **Researcher info and consent text** — `DICE/T_Consent.html` and `settings.py` (`full_name`, `eMail`, `study_name`)
+- **Topic ranking survey** (shown right after consent, for `FrictionScrollStudy`) — wording in `DICE/B_TopicRanking.html`; toggled on/off entirely via the `rank_topics` flag in that session's config in `settings.py`
 - **Briefing instructions** (shown before the feed starts) — `DICE/B_Briefing.html`
 - **Friction gate** — the black interstitial has no enforced wait; the Continue button is clickable as soon as it appears (`DICE/static/js/video_feed.js`, `DICE/C_Feed.html`)
 - **Ad content** — the three rows in the CSV where `is_ad=1` (one per topic, identical to each other by design)

@@ -40,6 +40,11 @@ def test_finalize_player_sequence_forces_commented_post_to_sequence_one():
     result = finalize_player_sequence(posts)
 
     assert result.iloc[0]['doc_id'] == 2
+    # The displaced doc_id=1 (which held sequence=1 before doc_id=2 took
+    # over that slot) must land on a valid, unused rank -- not overwritten,
+    # not dropped, not left tied with anything else.
+    assert sorted(result['sequence'].tolist()) == [1, 2, 3]
+    assert set(result['doc_id'].tolist()) == {1, 2, 3}
 
 
 def test_finalize_player_sequence_adds_commented_post_column_if_missing():

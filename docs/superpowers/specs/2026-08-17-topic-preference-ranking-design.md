@@ -33,6 +33,15 @@ will track participants' actual preferences rather than being forced even
 skew toward FOOD) — that's an intended consequence of measuring a real
 preference, not a defect.
 
+**Analysis implication:** this means `preference_alignment` is partially
+confounded with topic content, not just with uneven exposure counts — if the
+modal #1 pick is FOOD and the modal #3 pick is TRAVEL, a most-vs-least
+contrast is partly a FOOD-vs-TRAVEL content contrast too. The export carries
+both `preference_alignment` and the full `topic_ranking`/`condition` per row,
+so this can be covaried or stratified on in analysis, but it's a deliberate
+tradeoff of this design (not resolvable in the assignment mechanism itself)
+that any analysis plan needs to account for.
+
 `preference_alignment` is assigned via the same balanced shuffled-cycle
 mechanism already used for `nav_condition` (`assign_cycle_pairs` in
 `feed_logic.py`), just crossing `['most', 'least']` with `nav_conditions`
@@ -113,12 +122,20 @@ spec was written):** on this oTree version, directly accessing a `None`-valued
 field on a frozen player instance raises `TypeError`, not a harmless empty
 comparison as originally assumed here — `player.feed_condition` had to become
 `player.field_maybe_none('feed_condition')` in that one line, or every
-`rank_topics` participant's consent submission 500s. This is the same
-underlying oTree behavior that also required a `field_maybe_none()` fix for
-`topic_ranking` in the export path (Task 6). With that fix, the *value*
-produced (an empty-string `player.sequence`, immediately overwritten by
-`B_TopicRanking.before_next_page`) matches this spec's original intent — only
-the crash needed fixing, not the logic.
+`rank_topics` participant's consent submission 500s. With that fix, the
+*value* produced (an empty-string `player.sequence`, immediately overwritten
+by `B_TopicRanking.before_next_page`) matches this spec's original intent —
+only the crash needed fixing, not the logic.
+
+This is the same underlying frozen-instance/`None` crash mechanism that
+motivated the `field_maybe_none()` fixes for `topic_ranking`/`feed_condition`/
+`sequence` in the export path (Task 6, and a final-review follow-up).
+Those export fields were never actually at risk through oTree's real admin
+export UI, which unfreezes every player first — the risk there is specific
+to *direct* `custom_export()` invocation (scripts, tests, verification
+tooling), which is exactly how each of those gaps was actually found.
+`A_Intro.before_next_page`, by contrast, runs on every real page load, so
+that one *was* a live production crash, not just a direct-invocation risk.
 
 ## New Player fields
 
