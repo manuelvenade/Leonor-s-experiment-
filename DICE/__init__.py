@@ -425,7 +425,7 @@ def custom_export(players):
            'total_watch_time_seconds', 'session_duration_seconds', 'completion_rate']
 
     for p in players:
-        if not p.sequence:
+        if not p.field_maybe_none('sequence'):
             continue
 
         doc_ids = [int(x.strip()) for x in p.sequence.split(',')]
@@ -448,7 +448,7 @@ def custom_export(players):
             participant_code=p.participant.code,
             participant_label=p.participant.label,
             id_in_group=p.id_in_group,
-            feed_condition=p.feed_condition,
+            feed_condition=p.field_maybe_none('feed_condition'),
             nav_condition=p.field_maybe_none('nav_condition'),
             preference_alignment=p.field_maybe_none('preference_alignment'),
             topic_ranking=format_topic_ranking(p.field_maybe_none('topic_ranking')),

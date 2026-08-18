@@ -18,6 +18,7 @@
                         <p class="fw-semibold mb-2">Rank these topics</p>
                         <p class="text-muted">Use the arrows to put them in order from your most to least favorite. We'll show you videos from one of them, based on your ranking.</p>
 
+                        <div class="ranking-endpoint-label">&#9650; Most favorite</div>
                         <ol id="ranking-list" class="ranking-list" role="list">
                             {{ for topic in topics }}
                             <li class="ranking-item" data-topic="{{ topic }}">
@@ -29,6 +30,7 @@
                             </li>
                             {{ endfor }}
                         </ol>
+                        <div class="ranking-endpoint-label">&#9660; Least favorite</div>
 
                         <div id="ranking-status" class="visually-hidden" aria-live="polite"></div>
 

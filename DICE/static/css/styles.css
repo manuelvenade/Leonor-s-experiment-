@@ -15,10 +15,17 @@
     max-height: 100vh;
 }
 
+.ranking-endpoint-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+    text-align: center;
+}
 .ranking-list {
     list-style: none;
     padding: 0;
-    margin: 24px 0;
+    margin: 8px 0;
+    counter-reset: ranking-position;
 }
 .ranking-item {
     display: flex;
@@ -29,6 +36,15 @@
     background: #f8f9fa;
     border: 1px solid #dee2e6;
     border-radius: 8px;
+    counter-increment: ranking-position;
+}
+/* Position number stays correct automatically as items are reordered in
+   the DOM -- no JS needed to keep it in sync. */
+.ranking-item::before {
+    content: counter(ranking-position) ".";
+    font-weight: 700;
+    color: #adb5bd;
+    margin-right: 12px;
 }
 .ranking-label {
     font-weight: 600;
