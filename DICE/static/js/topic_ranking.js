@@ -22,6 +22,7 @@ if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', function () {
         const list = document.getElementById('ranking-list');
         const hiddenInput = document.getElementById('topic_ranking');
+        const initialInput = document.getElementById('topic_ranking_initial');
         const status = document.getElementById('ranking-status');
         if (!list || !hiddenInput) return;
 
@@ -30,6 +31,11 @@ if (typeof document !== 'undefined') {
                 return li.dataset.topic;
             });
         }
+
+        // Record the order as first rendered, before any interaction --
+        // lets the export distinguish a genuine reorder from a submitted
+        // default. Captured once, here, not re-captured on every render.
+        if (initialInput) initialInput.value = JSON.stringify(currentOrder());
 
         function render(order) {
             order.forEach(function (topic) {

@@ -95,7 +95,8 @@ For each participant × video, the export (`Data` tab in oTree's admin, or `/exp
 | `condition` | Video topic: SPORT, FOOD, or TRAVEL |
 | `nav_condition` | Navigation condition: normal or friction |
 | `preference_alignment` | Whether this participant was shown their most- or least-preferred topic |
-| `topic_ranking` | The participant's full topic ranking, most to least preferred (e.g. "FOOD, SPORT, TRAVEL") |
+| `topic_ranking` | The participant's final submitted topic ranking, most to least preferred (e.g. "FOOD, SPORT, TRAVEL") |
+| `topic_ranking_initial` | The order shown before any reordering. Compare to `topic_ranking`: identical = never touched the controls; different = genuinely reordered; blank = the ranking page's JS never ran (treat `topic_ranking` with caution for that row) |
 | `sequence_position` | Position of this video in the feed (1–6) |
 | `watch_time_seconds` | Seconds the video was actually playing |
 | `video_length_seconds` | The clip's actual length |

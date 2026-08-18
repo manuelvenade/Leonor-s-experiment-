@@ -42,6 +42,12 @@ class Player(BasePlayer):
     topic_ranking = models.LongStringField(
         doc='JSON list of topics ranked most-to-least preferred by the participant.',
         blank=True)
+    topic_ranking_initial = models.LongStringField(
+        doc='JSON list of topics in the order first shown to the participant, before any '
+            'reordering -- stored as-submitted (not defaulted) so an empty/unparseable value '
+            'is itself the signal that the reorder JS never ran, distinguishing that case and '
+            'a never-touched default from a genuine ranking.',
+        blank=True)
     sequence = models.StringField(doc='prints the sequence of posts based on doc_id')
 
     scroll_sequence = models.LongStringField(doc='tracks the sequence of feed items a participant scrolled through.')
@@ -319,7 +325,7 @@ class B_TopicRanking(Page):
 
     @staticmethod
     def get_form_fields(player):
-        return ['topic_ranking']
+        return ['topic_ranking', 'topic_ranking_initial']
 
     @staticmethod
     def vars_for_template(player):
@@ -417,6 +423,7 @@ page_sequence = [A_Intro,
 def custom_export(players):
     yield ['session', 'participant_code', 'participant_label', 'participant_in_session',
            'condition', 'nav_condition', 'preference_alignment', 'topic_ranking',
+           'topic_ranking_initial',
            'doc_id', 'sequence_position',
            'watch_time_seconds', 'video_length_seconds', 'watch_percentage',
            'liked', 'has_comment', 'comment',
@@ -452,6 +459,7 @@ def custom_export(players):
             nav_condition=p.field_maybe_none('nav_condition'),
             preference_alignment=p.field_maybe_none('preference_alignment'),
             topic_ranking=format_topic_ranking(p.field_maybe_none('topic_ranking')),
+            topic_ranking_initial=format_topic_ranking(p.field_maybe_none('topic_ranking_initial')),
             completed_feed=p.field_maybe_none('completed_feed'),
             last_position_viewed=p.field_maybe_none('last_position_viewed'),
             total_watch_time_seconds=aggregates['total_watch_time_seconds'],

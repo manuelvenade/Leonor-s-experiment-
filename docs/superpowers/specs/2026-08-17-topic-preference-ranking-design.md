@@ -84,9 +84,25 @@ under plain Node without a browser.
    permutation of the session's topics (e.g. JS failed to run), fall back to
    the topics in `subsession.feed_conditions` order (the CSV's own
    unique-value order, before the per-participant display shuffle) —
-   recorded as-is in `topic_ranking`, no separate "fallback occurred" flag,
-   since this is expected to be rare and the ranking data itself remains
-   inspectable.
+   recorded as-is in `topic_ranking`.
+
+   **Update (added during final review, not in the original approved
+   design):** the fallback above is deterministic (always the CSV's own
+   topic order), so a JS failure confined to one browser/device class could
+   silently install a topic × alignment confound with no trace in the
+   export — the original design's assumption that "the ranking data itself
+   remains inspectable" doesn't actually hold, since a fallback value is
+   indistinguishable from a genuine ranking or an untouched default. Fixed
+   by adding `player.topic_ranking_initial`: a second hidden field the
+   client JS populates once, immediately on page load, with the order as
+   first shown (before any reordering) — captured *as-submitted*, with no
+   server-side fallback/normalization applied to it, so its emptiness is
+   itself meaningful. Reading the pair together in the export:
+   - `topic_ranking_initial` empty → the reorder JS never ran (the
+     `topic_ranking` fallback fired).
+   - `topic_ranking_initial == topic_ranking` → JS ran, but the participant
+     never touched the ▲/▼ controls (submitted the shown default order).
+   - `topic_ranking_initial != topic_ranking` → a genuine reorder happened.
 2. `player.feed_condition = ranking[0] if player.preference_alignment ==
    'most' else ranking[-1]`.
 3. Filter the full (all-topics) `player.participant.videos` DataFrame down
@@ -147,6 +163,12 @@ preference_alignment = models.StringField(
 topic_ranking = models.LongStringField(
     doc='JSON list of topics ranked most→least preferred by the participant.',
     blank=True)
+topic_ranking_initial = models.LongStringField(
+    doc='JSON list of topics in the order first shown to the participant, '
+        'before any reordering -- stored as-submitted (not defaulted), so '
+        'an empty/unparseable value is itself the signal that the reorder '
+        'JS never ran. Added during final review; see "Update" note above.',
+    blank=True)
 ```
 
 `feed_condition` (existing field) is unchanged in meaning — it still holds
@@ -154,14 +176,19 @@ whichever topic the participant actually saw.
 
 ## Export changes
 
-`custom_export()` gains two participant-level columns (constant per
+`custom_export()` gains three participant-level columns (constant per
 participant, alongside `nav_condition`):
 
 ```
-preference_alignment  — from player.preference_alignment
-topic_ranking          — from player.topic_ranking, rendered as a
-                          comma-joined string ("FOOD, SPORT, TRAVEL")
-                          rather than raw JSON, for readability
+preference_alignment    — from player.preference_alignment
+topic_ranking            — from player.topic_ranking, rendered as a
+                            comma-joined string ("FOOD, SPORT, TRAVEL")
+                            rather than raw JSON, for readability
+topic_ranking_initial    — from player.topic_ranking_initial, same
+                            comma-joined rendering. Compare against
+                            topic_ranking per-row to distinguish a genuine
+                            reorder, an untouched default, or a JS-failure
+                            fallback (see the "Update" note above).
 ```
 
 ## Session config
